@@ -1,0 +1,8 @@
+Segment,Duration,Mode,Target
+Warmup Spin,5,erg,0.50
+Hard Watt Tempo,6,erg,180
+Easy Spin,2,erg,120
+Hill Climb,4,grade,6.0%
+Downhill Spin,2,grade,-1.5%
+Sprint Resistance,1,resistance,8
+Cooldown,5,erg,100

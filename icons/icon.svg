@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="boltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#facc15"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect width="512" height="512" rx="110" fill="url(#bgGrad)"/>
+  <rect width="504" height="504" x="4" y="4" rx="106" fill="none" stroke="url(#accentGrad)" stroke-width="6" opacity="0.4"/>
+
+  <!-- Bike Trainer Flywheel / Cadence Ring -->
+  <circle cx="160" cy="330" r="75" fill="none" stroke="#334155" stroke-width="14"/>
+  <circle cx="160" cy="330" r="50" fill="none" stroke="url(#accentGrad)" stroke-width="8" stroke-dasharray="8 8"/>
+  <circle cx="160" cy="330" r="22" fill="url(#accentGrad)"/>
+
+  <!-- Front Wheel / Base Stand -->
+  <circle cx="352" cy="330" r="75" fill="none" stroke="#334155" stroke-width="14"/>
+  <circle cx="352" cy="330" r="40" fill="none" stroke="#475569" stroke-width="6"/>
+
+  <!-- Bike Frame Geometry -->
+  <path d="M160 330 L256 330 L320 230 L210 230 Z" fill="none" stroke="url(#accentGrad)" stroke-width="16" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M256 330 L210 160" stroke="url(#accentGrad)" stroke-width="16" stroke-linecap="round"/>
+  <path d="M320 230 L345 170" stroke="url(#accentGrad)" stroke-width="16" stroke-linecap="round"/>
+
+  <!-- Saddle -->
+  <path d="M185 160 L235 160" stroke="#f8fafc" stroke-width="14" stroke-linecap="round"/>
+
+  <!-- Handlebars -->
+  <path d="M335 170 L365 170 C380 170 385 190 375 200" fill="none" stroke="#f8fafc" stroke-width="14" stroke-linecap="round"/>
+
+  <!-- Trainer Resistance Stand Base -->
+  <path d="M100 370 L160 330 L195 385" stroke="#64748b" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="80" y1="385" x2="215" y2="385" stroke="#64748b" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Bluetooth & Lightning Power Surge Glow -->
+  <g filter="url(#glow)">
+    <!-- Lightning Bolt (Watts & Power) -->
+    <path d="M275 90 L235 175 L270 175 L240 255 L315 155 L280 155 Z" fill="url(#boltGrad)"/>
+  </g>
+
+  <!-- Bluetooth Signal waves -->
+  <path d="M380 90 C410 115 425 150 425 190" fill="none" stroke="url(#accentGrad)" stroke-width="10" stroke-linecap="round" opacity="0.9"/>
+  <path d="M405 70 C445 105 465 145 465 190" fill="none" stroke="url(#accentGrad)" stroke-width="8" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- App Label Subtle -->
+  <text x="256" y="465" font-family="-apple-system, Roboto, sans-serif" font-weight="900" font-size="34" fill="#f8fafc" text-anchor="middle" letter-spacing="4">FTMS INDOOR</text>
+</svg>

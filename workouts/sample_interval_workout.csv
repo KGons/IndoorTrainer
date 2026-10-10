@@ -1,0 +1,7 @@
+Segment,Duration,Mode,Target
+Warmup,5,erg,0.50
+Repeat,5
+Set,3,erg,0.90
+Rest,1,erg,120
+End
+Cooldown,5,erg,130

@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="IndoorTrainer">
+  <meta name="application-name" content="Indoor Trainer">
+  <meta name="description" content="FTMS Bluetooth smart bike trainer controller and workout player for phone">
+
+  <title>Indoor Trainer - FTMS Controller</title>
+
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <svg class="brand-icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="5.5" cy="17.5" r="3.5"/>
+          <circle cx="18.5" cy="17.5" r="3.5"/>
+          <path d="M15 17.5l-4-7h-3"/>
+          <path d="M8 10.5l4-4 3 3"/>
+        </svg>
+        <div class="brand-text">
+          <h1>Indoor Trainer</h1>
+          <span class="brand-badge">FTMS BLE</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- PWA Install Button (revealed if browser allows install) -->
+        <button id="btnInstallPwa" class="btn-install-pill" style="display: none;" title="Install App to Phone">
+          📲 Install
+        </button>
+
+        <!-- Interval Audio Alerts Toggle -->
+        <button id="btnToggleSound" class="header-icon-btn active" title="Interval Sound Alerts (Beeps)">
+          🔊
+        </button>
+
+        <!-- Fullscreen Cockpit Toggle -->
+        <button id="btnToggleFullscreen" class="header-icon-btn" title="Toggle Fullscreen Handlebar Cockpit">
+          ⛶
+        </button>
+
+        <!-- Standalone Phone Setup Info -->
+        <button id="btnOpenPhoneGuide" class="header-icon-btn" title="How to run standalone on phone">
+          ❓
+        </button>
+      </div>
+    </header>
+
+    <!-- Standalone Status / WakeLock Bar -->
+    <div class="sub-header-bar">
+      <div class="status-indicator">
+        <span id="statusDot" class="status-dot"></span>
+        <span id="statusText">Disconnected</span>
+      </div>
+      <div id="deviceDetails" class="status-indicator" style="display: none;">
+        <span id="deviceName">Trainer</span>
+      </div>
+      <span id="wakeLockStatus" class="wake-lock-pill" title="Keeps phone screen awake while cycling">
+        ☀️ Awake: Off
+      </span>
+    </div>
+
+    <!-- Hero Trainer Connection Button (Full Width, Demo Removed) -->
+    <div class="connect-container">
+      <button id="btnConnect" class="btn-connect">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11"/>
+        </svg>
+        <span id="connectBtnText">Connect Smart Trainer</span>
+      </button>
+    </div>
+
+    <!-- Live Telemetry Grid (Cockpit View) -->
+    <div class="metrics-grid">
+      <!-- Hero: Instantaneous Power -->
+      <div class="metric-card hero">
+        <div class="metric-title">
+          <span>Current Power</span>
+          <span id="targetWattsHeader">Target: -- W</span>
+        </div>
+        <div class="metric-value-row">
+          <span id="valPower" class="metric-val hero-val">0</span>
+          <span class="metric-unit">W</span>
+        </div>
+        <div class="metric-sub" id="powerDeltaSub">Ready to pedal</div>
+      </div>
+
+      <!-- Cadence -->
+      <div class="metric-card">
+        <div class="metric-title">Cadence</div>
+        <div class="metric-value-row">
+          <span id="valCadence" class="metric-val">0</span>
+          <span class="metric-unit">RPM</span>
+        </div>
+        <div class="metric-sub" id="cadenceSub">--</div>
+      </div>
+
+      <!-- Speed -->
+      <div class="metric-card">
+        <div class="metric-title">Speed</div>
+        <div class="metric-value-row">
+          <span id="valSpeed" class="metric-val">0.0</span>
+          <span class="metric-unit">km/h</span>
+        </div>
+        <div class="metric-sub" id="distanceSub">0.0 km</div>
+      </div>
+
+      <!-- Elapsed Time -->
+      <div class="metric-card">
+        <div class="metric-title">Elapsed Time</div>
+        <div class="metric-value-row">
+          <span id="valTime" class="metric-val" style="font-size: 2.2rem;">00:00</span>
+        </div>
+        <div class="metric-sub" id="caloriesSub">0 kcal</div>
+      </div>
+
+      <!-- Heart Rate -->
+      <div class="metric-card">
+        <div class="metric-title">Heart Rate</div>
+        <div class="metric-value-row">
+          <span id="valHeartRate" class="metric-val">--</span>
+          <span class="metric-unit">BPM</span>
+        </div>
+        <div class="metric-sub">FTMS Stream</div>
+      </div>
+    </div>
+
+    <!-- Trainer Resistance & Workout Control Card -->
+    <div class="control-card">
+      <div class="control-header">
+        <span class="control-title">Trainer Control</span>
+        <div class="mode-pills">
+          <button id="tabErg" class="mode-pill active">ERG Mode</button>
+          <button id="tabSlope" class="mode-pill">Slope Sim</button>
+          <button id="tabWorkout" class="mode-pill">Workout</button>
+        </div>
+      </div>
+
+      <!-- ERG Mode Panel -->
+      <div id="ergSection" class="erg-section">
+        <div class="erg-display">
+          <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Target Power</div>
+            <div class="target-badge"><span id="targetWattsDisplay">150</span> <span>Watts</span></div>
+          </div>
+          <div>
+            <button id="btnSendTarget" class="btn-step" style="padding: 12px 20px; background: var(--accent-cyan); color: #000; font-weight: 800; font-size: 0.95rem;">Set Watts</button>
+          </div>
+        </div>
+
+        <!-- Step adjustments -->
+        <div class="adjust-buttons-grid">
+          <button class="btn-step" data-step="-25">-25</button>
+          <button class="btn-step" data-step="-10">-10</button>
+          <button class="btn-step" data-step="-5">-5</button>
+          <button class="btn-step" data-step="+5">+5</button>
+          <button class="btn-step" data-step="+10">+10</button>
+          <button class="btn-step" data-step="+25">+25</button>
+        </div>
+
+        <!-- Slider -->
+        <div class="slider-container">
+          <input type="range" id="sliderWatts" min="50" max="500" step="5" value="150" aria-label="Target Watts">
+        </div>
+
+        <!-- Presets -->
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Quick Presets:</div>
+        <div class="presets-row">
+          <button class="btn-preset" data-watts="100">100W</button>
+          <button class="btn-preset" data-watts="140">140W</button>
+          <button class="btn-preset" data-watts="180">180W</button>
+          <button class="btn-preset" data-watts="220">220W</button>
+          <button class="btn-preset" data-watts="260">260W</button>
+          <button class="btn-preset" data-watts="300">300W</button>
+        </div>
+      </div>
+
+      <!-- Slope Simulation Panel -->
+      <div id="slopeSection" class="slope-section" style="display: none;">
+        <div class="erg-display">
+          <div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Simulated Grade</div>
+            <div class="target-badge"><span id="targetSlopeDisplay">+0.0%</span></div>
+          </div>
+          <div>
+            <button id="btnSendSlope" class="btn-step" style="padding: 12px 20px; background: var(--accent-cyan); color: #000; font-weight: 800; font-size: 0.95rem;">Set Grade</button>
+          </div>
+        </div>
+
+        <!-- Incremental Slope steps -->
+        <div class="adjust-buttons-grid" style="grid-template-columns: repeat(4, 1fr);">
+          <button class="btn-step" data-slope-step="-1.0">-1.0%</button>
+          <button class="btn-step" data-slope-step="-0.5">-0.5%</button>
+          <button class="btn-step" data-slope-step="+0.5">+0.5%</button>
+          <button class="btn-step" data-slope-step="+1.0">+1.0%</button>
+        </div>
+
+        <div class="slider-container">
+          <input type="range" id="sliderSlope" min="-5" max="15" step="0.5" value="0" aria-label="Simulated Grade">
+        </div>
+
+        <!-- Presets -->
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Quick Slope Presets:</div>
+        <div class="presets-row">
+          <button class="btn-preset" data-slope="-3.0">-3% Down</button>
+          <button class="btn-preset" data-slope="0.0">0% Flat</button>
+          <button class="btn-preset" data-slope="3.0">+3% Hill</button>
+          <button class="btn-preset" data-slope="6.0">+6% Climb</button>
+          <button class="btn-preset" data-slope="10.0">+10% Steep</button>
+        </div>
+      </div>
+
+      <!-- Structured Workout Panel -->
+      <div id="workoutSection" class="workout-section" style="display: none;">
+        <!-- FTP & Action Row -->
+        <div class="ftp-config-row">
+          <div class="ftp-input-group">
+            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">FTP:</span>
+            <input type="number" id="inputFtp" min="60" max="600" value="200" aria-label="Functional Threshold Power">
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Watts</span>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button id="btnOpenLibrary" class="btn-step" style="padding: 8px 12px; font-size: 0.82rem; background: var(--accent-cyan); color: #000; font-weight: 800;">
+              📚 Library
+            </button>
+            <button id="btnOpenBuilder" class="btn-step" style="padding: 8px 12px; font-size: 0.82rem; background: #3b82f6; color: #fff; font-weight: 700;">
+              🛠 Builder
+            </button>
+            <button id="btnOpenWorkoutEditor" class="btn-step" style="padding: 8px 10px; font-size: 0.82rem;">
+              📝 CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Visual Workout Timeline -->
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted);">
+          <span id="workoutNameDisplay">5x3min Threshold Intervals</span>
+          <span id="workoutTotalDuration">--:--</span>
+        </div>
+        <div id="workoutTimeline" class="workout-timeline"></div>
+
+        <!-- Active Interval HUD -->
+        <div class="interval-hud">
+          <div class="interval-hud-header">
+            <span id="currentIntervalName" class="interval-name">Ready</span>
+            <span id="intervalCountdown" class="interval-countdown">00:00</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.88rem; color: #38bdf8; font-weight: 700;">
+            <span id="intervalWattsTarget">Target: -- W</span>
+            <span id="intervalPctFtp">--% FTP</span>
+          </div>
+          <div id="nextIntervalPreview" class="next-interval-preview">Next: --</div>
+        </div>
+
+        <!-- Zwift-style Live Intensity Bias Adjuster -->
+        <div class="bias-container">
+          <div class="bias-label-group">
+            <span style="font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Workout Bias</span>
+            <span id="biasDisplay" class="bias-value">100%</span>
+          </div>
+          <div class="bias-buttons">
+            <button class="btn-bias" data-bias="-5">-5%</button>
+            <button class="btn-bias" data-bias="-1">-1%</button>
+            <button class="btn-bias" data-bias="reset" style="font-size: 0.75rem;">100%</button>
+            <button class="btn-bias" data-bias="+1">+1%</button>
+            <button class="btn-bias" data-bias="+5">+5%</button>
+          </div>
+        </div>
+
+        <!-- Workout Play / Pause / Skip Controls -->
+        <div class="workout-controls-grid">
+          <button id="btnWorkoutPrev" class="btn-step" style="font-size: 1.1rem; padding: 14px;">⏮</button>
+          <button id="btnWorkoutToggle" class="btn-workout-main btn-play">▶ Start Workout</button>
+          <button id="btnWorkoutSkip" class="btn-step" style="font-size: 1.1rem; padding: 14px;">⏭</button>
+        </div>
+        <button id="btnWorkoutStop" class="btn-step" style="width: 100%; color: #f87171; border-color: rgba(239, 68, 68, 0.4); display: none; padding: 12px; margin-top: 6px;">
+          ⏹ Stop Workout
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Event & Protocol Log -->
+    <div class="log-card">
+      <div class="log-header" id="logToggle">
+        <span>Bluetooth Protocol Log (<span id="logCount">0</span>)</span>
+        <span id="logArrow">▲</span>
+      </div>
+      <div class="log-content" id="logBox">
+        <div class="log-entry info">Ready. Tap 'Connect Smart Trainer' to scan for Bluetooth FTMS.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Standalone Phone Setup / Help Modal -->
+  <div id="modalPhoneGuide" class="modal-overlay">
+    <div class="modal-content" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+          📱 <span>Run on Phone Without PC</span>
+        </h3>
+        <button id="btnClosePhoneGuide" style="background: transparent; border: none; color: #fff; font-size: 1.25rem; cursor: pointer;">✕</button>
+      </div>
+      <div class="modal-body" style="font-size: 0.85rem; line-height: 1.5; color: #cbd5e1; display: flex; flex-direction: column; gap: 12px;">
+        <div style="background: rgba(6, 182, 212, 0.1); border-left: 3px solid var(--accent-cyan); padding: 10px 12px; border-radius: 4px;">
+          <strong>Direct Phone Bluetooth:</strong> The app connects directly from your phone's Bluetooth chip to your smart trainer (Elite Direto, Kickr, Tacx, etc.). Once installed, your PC is <em>never</em> needed!
+        </div>
+
+        <div>
+          <h4 style="color: #fff; font-size: 0.95rem; margin-bottom: 4px;">Step 1: Install to Phone Home Screen</h4>
+          <p>On Android Chrome / Edge: Tap the <strong>📲 Install</strong> button in the header, or tap the browser menu (⋮) and select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</p>
+          <p style="margin-top: 4px; color: var(--text-muted);">The app now installs as a native standalone app with its own icon and opens full-screen without address bars!</p>
+        </div>
+
+        <div>
+          <h4 style="color: #fff; font-size: 0.95rem; margin-bottom: 4px;">Step 2: 100% Offline Capability</h4>
+          <p>Thanks to the built-in Service Worker, this app works completely offline without internet or Wi-Fi. You can ride in your garage, basement, or pain cave anytime.</p>
+        </div>
+
+        <div>
+          <h4 style="color: #fff; font-size: 0.95rem; margin-bottom: 4px;">Step 3: Free Permanent Cloud Hosting (GitHub Pages)</h4>
+          <p>To access this app URL on your phone anytime from anywhere:</p>
+          <ol style="margin-left: 20px; display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
+            <li>Create a free GitHub repository and push this folder.</li>
+            <li>In GitHub repo Settings → <strong>Pages</strong>, set branch to <code>main</code> and save.</li>
+            <li>Open the provided <code>https://...</code> link on your Android phone and install it once.</li>
+          </ol>
+        </div>
+
+        <div>
+          <h4 style="color: #fff; font-size: 0.95rem; margin-bottom: 4px;">Handlebar Cockpit Features</h4>
+          <ul style="margin-left: 20px; display: flex; flex-direction: column; gap: 4px;">
+            <li><strong>Audio Beeps:</strong> 3-2-1 countdown sounds at interval ends.</li>
+            <li><strong>Haptic Buzz:</strong> Vibrates on countdown and interval switches.</li>
+            <li><strong>Screen Awake:</strong> Prevents phone screen from dimming/sleeping.</li>
+            <li><strong>Landscape Cockpit:</strong> Turn phone sideways on handlebars for widescreen cockpit mode!</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content: flex-end;">
+        <button id="btnClosePhoneGuideBtn" class="btn-step" style="padding: 10px 18px; background: var(--accent-cyan); color: #000; font-weight: 800;">Got It!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workout Library Modal -->
+  <div id="modalLibrary" class="modal-overlay">
+    <div class="modal-content" style="max-width: 550px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+          📚 <span>Workout Library</span>
+        </h3>
+        <button id="btnCloseLibrary" style="background: transparent; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="library-filters" id="libraryFilters">
+          <button class="category-pill active" data-category="all">All</button>
+          <button class="category-pill" data-category="Threshold">Threshold</button>
+          <button class="category-pill" data-category="VO2 Max">VO2 Max</button>
+          <button class="category-pill" data-category="Climbing (Grade)">Climbing</button>
+          <button class="category-pill" data-category="Sweet Spot">Sweet Spot</button>
+          <button class="category-pill" data-category="Sprints">Sprints</button>
+          <button class="category-pill" data-category="Recovery">Recovery</button>
+          <button class="category-pill" data-category="Custom">Custom</button>
+        </div>
+
+        <div class="library-grid" id="libraryList">
+          <!-- Dynamically populated workout cards -->
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content: flex-end;">
+        <button id="btnCloseLibraryBtn" class="btn-step" style="padding: 10px 18px;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CSV Workout Editor / Import Modal -->
+  <div id="modalWorkout" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="font-size: 1rem;">CSV Workout Editor & Import</h3>
+        <button id="btnCloseModal" style="background: transparent; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
+          <strong>Format:</strong> <code>Segment, Duration, Mode, Target</code><br>
+          • <strong>ERG mode:</strong> <code>erg, 0.90</code> (90% FTP) or <code>erg, 150</code> (hard 150W)<br>
+          • <strong>Grade mode:</strong> <code>grade, 5.0%</code> (slope simulation)<br>
+          • <strong>Resistance mode:</strong> <code>resistance, 8</code> (brake level)<br>
+          • Supports <code>Repeat, 5</code> ... <code>End</code>
+        </div>
+
+        <input type="text" id="inputWorkoutSaveName" placeholder="Workout Name (e.g. My Killer 3x5min)" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 0.9rem; width: 100%;">
+
+        <textarea id="workoutTextInput" class="modal-textarea" spellcheck="false"># Format: Segment,Duration,Mode,Target
+Segment,Duration,Mode,Target
+Warmup,5,erg,0.50
+Repeat,5
+Set,3,erg,0.90
+Rest,1,erg,120
+End
+Cooldown,5,erg,130</textarea>
+        
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="file" id="fileCsvInput" accept=".csv" style="display: none;">
+          <button id="btnTriggerUpload" class="btn-step" style="flex: 1; padding: 12px; font-size: 0.9rem;">
+            📂 Load .CSV File
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnCancelModal" class="btn-step" style="padding: 10px 14px;">Cancel</button>
+        <button id="btnSaveToLibrary" class="btn-step" style="padding: 10px 14px; background: #3b82f6; color: #fff; font-weight: 700;">
+          💾 Save to Library
+        </button>
+        <button id="btnApplyWorkout" class="btn-step" style="padding: 10px 18px; background: var(--accent-cyan); color: #000; font-weight: 800;">
+          Load Workout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workout Builder Modal -->
+  <div id="modalBuilder" class="modal-overlay">
+    <div class="modal-content" style="max-width: 620px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+          🛠 <span>Workout Builder</span>
+        </h3>
+        <button id="btnCloseBuilder" style="background: transparent; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Workout Meta -->
+        <div class="builder-meta-grid">
+          <input type="text" id="builderWorkoutName" class="builder-input" placeholder="Workout Name (e.g. 5x3min FTP Attacks)" value="Custom Builder Workout">
+          <select id="builderCategory" class="builder-select">
+            <option value="Threshold">Threshold</option>
+            <option value="VO2 Max">VO2 Max</option>
+            <option value="Climbing (Grade)">Climbing</option>
+            <option value="Sweet Spot">Sweet Spot</option>
+            <option value="Sprints">Sprints</option>
+            <option value="Recovery">Recovery</option>
+            <option value="Custom" selected>Custom</option>
+          </select>
+        </div>
+
+        <!-- Live Visual Preview of Built Workout -->
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+          <span>Workout Profile Preview</span>
+          <span id="builderTotalDuration">Total: 00:00</span>
+        </div>
+        <div id="builderTimelinePreview" class="workout-timeline" style="height: 38px;"></div>
+
+        <!-- Segments List -->
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+            Workout Segments (<span id="builderSegmentCount">0</span>):
+          </span>
+          <span style="font-size: 0.7rem; color: var(--text-muted);">Name | Duration | Mode | Target</span>
+        </div>
+        <div id="builderSegmentsList" class="builder-segments-list">
+          <!-- Dynamic Segment Rows -->
+        </div>
+
+        <!-- Inline Repeat Form (toggleable) -->
+        <div id="builderRepeatBox" class="repeat-creator-box">
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 800; color: var(--accent-cyan);">
+            <span>🔁 Add Interval Repeat Set</span>
+            <button id="btnCloseRepeatBox" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;">✕</button>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; font-size: 0.75rem;">
+            <div>
+              <span>Repeat Count:</span>
+              <input type="number" id="repeatCountInput" class="builder-input" value="5" min="2" max="20">
+            </div>
+            <div>
+              <span>Work Duration (min):</span>
+              <input type="number" id="repeatWorkDurInput" class="builder-input" value="3" step="0.5" min="0.5">
+            </div>
+            <div>
+              <span>Work Target (% FTP or W):</span>
+              <input type="text" id="repeatWorkTargetInput" class="builder-input" value="0.90">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.75rem;">
+            <div>
+              <span>Rest Duration (min):</span>
+              <input type="number" id="repeatRestDurInput" class="builder-input" value="1" step="0.5" min="0.5">
+            </div>
+            <div>
+              <span>Rest Target (% FTP or W):</span>
+              <input type="text" id="repeatRestTargetInput" class="builder-input" value="120">
+            </div>
+          </div>
+          <button id="btnConfirmAddRepeat" class="btn-step" style="background: var(--accent-cyan); color: #000; font-weight: 800; padding: 10px;">
+            Insert Repeat Set
+          </button>
+        </div>
+
+        <!-- Quick Add Toolbar -->
+        <div class="builder-tools-row">
+          <button id="btnAddSegmentBtn" class="btn-builder-tool">➕ Add Interval</button>
+          <button id="btnOpenRepeatBox" class="btn-builder-tool" style="border-color: var(--accent-cyan); color: var(--accent-cyan);">🔁 Add Repeat Set</button>
+          <button id="btnAddWarmupPreset" class="btn-builder-tool">🔥 +5m Warmup</button>
+          <button id="btnAddCooldownPreset" class="btn-builder-tool">❄️ +5m Cooldown</button>
+        </div>
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="modal-footer">
+        <button id="btnCancelBuilder" class="btn-step" style="padding: 10px 14px;">Cancel</button>
+        <button id="btnDownloadCsv" class="btn-step" style="padding: 10px 14px; background: rgba(255,255,255,0.08);" title="Download as .csv file">
+          📥 Download .CSV
+        </button>
+        <button id="btnSaveBuilderToLibrary" class="btn-step" style="padding: 10px 18px; background: var(--accent-cyan); color: #000; font-weight: 800;">
+          💾 Save to Library & Ride
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

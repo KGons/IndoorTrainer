@@ -1,0 +1,9 @@
+Segment,Duration,Mode,Target
+Warmup,10,erg,0.55
+Tempo Primer,3,erg,0.80
+Recovery,2,erg,100
+Repeat,4
+VO2 Max,4,erg,1.10
+Recovery,3,erg,100
+End
+Cooldown,8,erg,0.50
