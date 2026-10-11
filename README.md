@@ -13,6 +13,7 @@ A standalone, high-contrast mobile web app and installable Progressive Web App (
 | **Manual ERG Mode** | Set fixed target wattage (50W - 500W) with quick presets and steps. |
 | **Slope Simulation** | Set simulated climbing grades (-5% downhill to +15% climb). |
 | **Offline Cache** | Full PWA Service Worker caching for zero-network operation. |
+| **FIT Activity Export** | Records structured workouts and downloads a Garmin-compatible indoor cycling activity when stopped or completed. |
 
 
 ---
@@ -55,6 +56,15 @@ A standalone, high-contrast mobile web app and installable Progressive Web App (
 
 ---
 
+## FIT recording & Garmin import
+
+- Start a **structured workout** to begin recording. Stop it or let it finish to generate and automatically download a `.fit` activity. The export panel lets you download again or share the file where your browser supports file sharing.
+- Records actual trainer power, cadence, speed, and heart rate when available, with timestamps, estimated distance from speed, a lap, and session summaries. Missing/stale sensor values are not replaced with workout targets. Pauses are excluded from timer duration and distance; elapsed duration includes pauses. Disconnection clears sensor readings but does not stop the workout.
+- Recording works offline and stays in memory: keep the app open until you save the file. The latest export remains available until the next recorded workout is saved or the page is closed/reloaded. Manual ERG and slope sessions outside a structured workout are not recorded.
+- Tap **Open Garmin Connect Import**, sign in, and upload the downloaded FIT file. On a phone, you may need the browser's **Desktop site** option. See [Garmin's manual activity upload instructions](https://support.garmin.com/en-US/?faq=Ht3ZP52Kju075uKvqTqu99).
+- Garmin Connect mobile file opening is intended for courses, not a reliable recorded-activity import. Choosing Garmin as the default file app does not enable automatic activity upload. The PWA cannot choose a default app, silently open another app, or upload to your Garmin account; use the web import page, then view the activity in Garmin Connect mobile.
+
+---
 
 
 ## Support
