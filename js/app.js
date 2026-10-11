@@ -3,8 +3,10 @@ import { FTMSClient } from './ftms.js';
 import { WorkoutRunner, WorkoutParser } from './workout.js';
 import { WorkoutLibrary } from './library.js';
 import { ActivityRecorder } from './fit.js';
+import { HRMClient } from './hrm.js';
 
 const ftms = new FTMSClient();
+const hrm = new HRMClient();
 const workoutRunner = new WorkoutRunner();
 const activityRecorder = new ActivityRecorder();
 
@@ -16,6 +18,9 @@ const statusText = document.getElementById('statusText');
 const deviceDetails = document.getElementById('deviceDetails');
 const deviceName = document.getElementById('deviceName');
 const wakeLockStatus = document.getElementById('wakeLockStatus');
+const btnConnectHrm = document.getElementById('btnConnectHrm');
+const hrmBtnText = document.getElementById('hrmBtnText');
+const hrmStatus = document.getElementById('hrmStatus');
 
 // Mobile Action Buttons & Modals
 const btnInstallPwa = document.getElementById('btnInstallPwa');
@@ -246,6 +251,65 @@ function stopTimer() {
 }
 
 // FTMS Event Listeners
+let lastHeartRateTime = 0;
+
+function clearHeartRate() {
+  lastHeartRateTime = 0;
+  valHeartRate.textContent = '--';
+  activityRecorder.clearTelemetry(Date.now(), ['heartRate']);
+}
+
+function updateHeartRate(heartRate) {
+  if (!Number.isFinite(heartRate) || heartRate <= 0) {
+    clearHeartRate();
+    return;
+  }
+  lastHeartRateTime = Date.now();
+  valHeartRate.textContent = heartRate;
+  activityRecorder.update({ heartRate });
+}
+
+setInterval(() => {
+  if (lastHeartRateTime && Date.now() - lastHeartRateTime > 5000) clearHeartRate();
+}, 1000);
+
+hrm.addEventListener('connected', e => {
+  clearHeartRate();
+  btnConnectHrm.classList.add('connected');
+  hrmBtnText.textContent = 'Disconnect Heart Rate Strap';
+  hrmStatus.textContent = `Heart rate strap: ${e.detail.name}`;
+  addLog(`Heart rate strap connected: ${e.detail.name}`);
+});
+
+hrm.addEventListener('disconnected', () => {
+  clearHeartRate();
+  btnConnectHrm.classList.remove('connected');
+  hrmBtnText.textContent = 'Connect Heart Rate Strap';
+  hrmStatus.textContent = 'Heart rate strap: disconnected';
+  addLog('Heart rate strap disconnected. Trainer heart rate will be used when available.', 'warn');
+});
+
+hrm.addEventListener('telemetry', e => {
+  updateHeartRate(e.detail.heartRate);
+});
+
+btnConnectHrm.addEventListener('click', async () => {
+  if (hrm.isConnected) {
+    hrm.disconnect();
+    return;
+  }
+  btnConnectHrm.disabled = true;
+  hrmStatus.textContent = 'Heart rate strap: connecting...';
+  try {
+    await hrm.connect();
+  } catch (err) {
+    hrmStatus.textContent = `Heart rate strap: ${err.message}`;
+    addLog(`Heart rate strap connection failed: ${err.message}`, 'warn');
+  } finally {
+    btnConnectHrm.disabled = false;
+  }
+});
+
 ftms.addEventListener('log', (e) => {
   addLog(e.detail.message, e.detail.type);
 });
@@ -272,7 +336,8 @@ ftms.addEventListener('connected', async (e) => {
 });
 
 ftms.addEventListener('disconnected', () => {
-  activityRecorder.clearTelemetry();
+  activityRecorder.clearTelemetry(Date.now(), ['power', 'cadence', 'speed']);
+  if (!hrm.isConnected) clearHeartRate();
   statusDot.className = 'status-dot';
   statusText.textContent = 'Disconnected';
   btnConnect.className = 'btn-connect';
@@ -291,7 +356,8 @@ ftms.addEventListener('deviceinfo', (e) => {
 
 ftms.addEventListener('telemetry', (e) => {
   const d = e.detail;
-  activityRecorder.update(d);
+  const { heartRate, ...trainerData } = d;
+  activityRecorder.update(trainerData);
 
   // Power
   if (d.power !== undefined) {
@@ -349,8 +415,8 @@ ftms.addEventListener('telemetry', (e) => {
   }
 
   // Heart Rate
-  if (d.heartRate !== undefined) {
-    valHeartRate.textContent = d.heartRate;
+  if (!hrm.isConnected && heartRate !== undefined) {
+    updateHeartRate(heartRate);
   }
 
   // Calories
