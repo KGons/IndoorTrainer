@@ -237,12 +237,6 @@
             <button id="btnOpenLibrary" class="btn-step" style="padding: 8px 12px; font-size: 0.82rem; background: var(--accent-cyan); color: #000; font-weight: 800;">
               📚 Library
             </button>
-            <button id="btnOpenBuilder" class="btn-step" style="padding: 8px 12px; font-size: 0.82rem; background: #3b82f6; color: #fff; font-weight: 700;">
-              🛠 Builder
-            </button>
-            <button id="btnOpenWorkoutEditor" class="btn-step" style="padding: 8px 10px; font-size: 0.82rem;">
-              📝 CSV
-            </button>
           </div>
         </div>
 
@@ -381,7 +375,15 @@
           <!-- Dynamically populated workout cards -->
         </div>
       </div>
-      <div class="modal-footer" style="justify-content: flex-end;">
+      <div class="modal-footer" style="justify-content: space-between;">
+        <div style="display: flex; gap: 6px;">
+          <button id="btnOpenBuilder" class="btn-step" style="padding: 10px 14px; font-size: 0.82rem; background: #3b82f6; color: #fff; font-weight: 700;">
+            🛠 Builder
+          </button>
+          <button id="btnOpenWorkoutEditor" class="btn-step" style="padding: 10px 14px; font-size: 0.82rem;">
+            📝 CSV
+          </button>
+        </div>
         <button id="btnCloseLibraryBtn" class="btn-step" style="padding: 10px 18px;">Close</button>
       </div>
     </div>
