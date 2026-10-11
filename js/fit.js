@@ -28,6 +28,17 @@ class FitWriter {
     this.bytes.push(local);
     fields.forEach(([, size], index) => {
       let value = values[index];
+      if (fields[index][2] === 0x07) {
+        const stringBytes = [];
+        const encoder = new TextEncoder();
+        for (const character of value || '') {
+          const encoded = encoder.encode(character);
+          if (stringBytes.length + encoded.length >= size) break;
+          stringBytes.push(...encoded);
+        }
+        for (let byte = 0; byte < size; byte++) this.bytes.push(stringBytes[byte] || 0);
+        return;
+      }
       if (value === undefined) value = size === 4 ? 0xFFFFFFFF : size === 2 ? 0xFFFF : 0xFF;
       for (let byte = 0; byte < size; byte++) this.bytes.push((value >>> (byte * 8)) & 255);
     });
@@ -53,11 +64,14 @@ export class ActivityRecorder {
     this.telemetry = {};
   }
 
-  start(name, now = Date.now()) {
+  start(name, now = Date.now(), workout = null, ftp = 200) {
     if (this.active) return;
     this.active = true;
     this.paused = false;
     this.name = name;
+    this.workout = Array.isArray(workout) ? workout.map(step => ({ ...step })) : null;
+    this.ftp = ftp;
+    this.workoutStepIndex = 0;
     this.startTime = now;
     this.activeSince = now;
     this.timerMs = 0;
@@ -68,6 +82,10 @@ export class ActivityRecorder {
     this.events = [{ time: now, type: 0 }];
     this.telemetry = {};
     this.lastSampleTime = now;
+  }
+
+  setWorkoutStep(index) {
+    if (Number.isInteger(index) && index >= 0) this.workoutStepIndex = index;
   }
 
   update(data, now = Date.now()) {
@@ -87,7 +105,12 @@ export class ActivityRecorder {
     for (const [key, reading] of Object.entries(this.telemetry)) {
       if (now - reading.time <= 5000) values[key] = reading.value;
     }
-    const record = { time: now, distance: this.distance, ...values };
+    const record = {
+      time: now,
+      distance: this.distance,
+      ...values,
+      ...(this.workout ? { workoutStepIndex: this.workoutStepIndex } : {})
+    };
     const last = this.records[this.records.length - 1];
     if (last && fitTime(last.time) === fitTime(now)) this.records[this.records.length - 1] = record;
     else this.records.push(record);
@@ -155,8 +178,37 @@ export class ActivityRecorder {
     const uint16 = number => [number, 2, 0x84];
     const enumField = number => [number, 1, 0];
     const scaled = (value, scale, max) => value === undefined ? undefined : Math.min(max, Math.round(value * scale));
+    const stringField = (number, size) => [number, size, 0x07];
     writer.message(0, 0, [enumField(0), uint16(1), uint16(2), uint32(4)],
       [4, 255, 0, fitTime(this.startTime)]);
+
+    if (this.workout) {
+      writer.message(6, 26, [uint16(254), enumField(4), uint16(6), stringField(8, 32)],
+        [0, 2, this.workout.length, this.name]);
+      this.workout.forEach((step, index) => {
+        const isErg = step.mode === 'erg';
+        const power = isErg
+          ? Math.max(40, step.targetType === 'pct_ftp'
+            ? Math.round(this.ftp * step.targetValue) : Math.round(step.targetValue))
+          : undefined;
+        const targetType = isErg ? 4 : 2;
+        const targetNote = isErg
+          ? `Power target: ${power} W${step.targetType === 'pct_ftp' ? ` (${Math.round(step.targetValue * 100)}% FTP)` : ''}`
+          : step.mode === 'grade'
+            ? `Grade target: ${step.targetValue >= 0 ? '+' : ''}${step.targetValue}%`
+            : `Resistance target: ${step.targetValue}`;
+        const intensity = /warm.?up/i.test(step.name) ? 2
+          : /cool.?down/i.test(step.name) ? 3
+            : /recover|rest/i.test(step.name) ? 4 : 0;
+        writer.message(7, 27, [
+          uint16(254), stringField(0, 32), enumField(1), uint32(2), enumField(3),
+          uint32(4), uint32(5), uint32(6), enumField(7), stringField(8, 255)
+        ], [
+          index, step.name, 0, Math.round(step.durationSec * 1000), targetType,
+          0, power, power, intensity, targetNote
+        ]);
+      });
+    }
 
     const messages = [
       ...this.events.map(event => ({ ...event, event: true })),
@@ -166,13 +218,15 @@ export class ActivityRecorder {
       if (message.event) {
         writer.message(1, 21, [timestamp, enumField(0), enumField(1)], [fitTime(message.time), 0, message.type]);
       } else {
-        writer.message(2, 20, [timestamp, [3, 1, 2], [4, 1, 2], uint32(5), uint16(6), uint16(7)], [
+        writer.message(2, 20, [timestamp, [3, 1, 2], [4, 1, 2], uint32(5), uint16(6), uint16(7),
+          ...(this.workout ? [uint16(27)] : [])], [
           fitTime(message.time),
           scaled(message.heartRate, 1, 254),
           scaled(message.cadence, 1, 254),
           scaled(message.distance, 100, 0xFFFFFFFE),
           scaled(message.speed, 1000 / 3.6, 65534),
-          scaled(message.power, 1, 65534)
+          scaled(message.power, 1, 65534),
+          ...(this.workout ? [message.workoutStepIndex] : [])
         ]);
       }
     }
