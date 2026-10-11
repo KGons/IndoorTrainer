@@ -22,6 +22,9 @@ const btnInstallPwa = document.getElementById('btnInstallPwa');
 const btnToggleSound = document.getElementById('btnToggleSound');
 const btnToggleFullscreen = document.getElementById('btnToggleFullscreen');
 const btnOpenPhoneGuide = document.getElementById('btnOpenPhoneGuide');
+const btnToggleSettings = document.getElementById('btnToggleSettings');
+const btnCloseSettings = document.getElementById('btnCloseSettings');
+const settingsSection = document.getElementById('settingsSection');
 const modalPhoneGuide = document.getElementById('modalPhoneGuide');
 const btnClosePhoneGuide = document.getElementById('btnClosePhoneGuide');
 const btnClosePhoneGuideBtn = document.getElementById('btnClosePhoneGuideBtn');
@@ -446,6 +449,21 @@ if (btnToggleSound) {
   });
 }
 
+// Settings Pane
+if (btnToggleSettings && settingsSection) {
+  const toggleSettings = () => {
+    triggerHaptic(30);
+    settingsSection.classList.toggle('active');
+    btnToggleSettings.classList.toggle('active', settingsSection.classList.contains('active'));
+  };
+
+  btnToggleSettings.addEventListener('click', toggleSettings);
+
+  if (btnCloseSettings) {
+    btnCloseSettings.addEventListener('click', toggleSettings);
+  }
+}
+
 // Standalone Phone Setup / Help Modal
 if (btnOpenPhoneGuide && modalPhoneGuide) {
   btnOpenPhoneGuide.addEventListener('click', () => {
@@ -674,6 +692,14 @@ inputFtp.addEventListener('change', (e) => {
   renderWorkoutTimeline();
   syncWorkoutTargetToTrainer();
   addLog(`User FTP updated to ${workoutRunner.ftp}W`, 'info');
+});
+
+inputFtp.addEventListener('input', (e) => {
+  const val = parseInt(e.target.value, 10);
+  if (Number.isNaN(val)) return;
+  workoutRunner.setFtp(val);
+  renderWorkoutTimeline();
+  syncWorkoutTargetToTrainer();
 });
 
 // Sync workout target to trainer

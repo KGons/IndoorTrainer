@@ -57,6 +57,11 @@
         <button id="btnOpenPhoneGuide" class="header-icon-btn" title="How to run standalone on phone">
           ❓
         </button>
+
+        <!-- Settings Toggle -->
+        <button id="btnToggleSettings" class="header-icon-btn" title="Settings">
+          ⚙️
+        </button>
       </div>
     </header>
 
@@ -138,6 +143,25 @@
         <div class="metric-sub">FTMS Stream</div>
       </div>
     </div>
+
+    <!-- Settings Pane -->
+    <section id="settingsSection" class="settings-section" aria-label="App settings">
+      <div class="settings-card">
+        <div class="settings-header">
+          <span class="control-title">Settings</span>
+          <button id="btnCloseSettings" class="settings-close" aria-label="Close settings">✕</button>
+        </div>
+        <div class="settings-body">
+          <label class="settings-field" for="inputFtp">
+            <span>FTP</span>
+            <div class="settings-input-wrap">
+              <input type="number" id="inputFtp" min="60" max="600" value="200" aria-label="Functional Threshold Power">
+              <span>Watts</span>
+            </div>
+          </label>
+        </div>
+      </div>
+    </section>
 
     <!-- Trainer Resistance & Workout Control Card -->
     <div class="control-card">
@@ -226,18 +250,10 @@
 
       <!-- Structured Workout Panel -->
       <div id="workoutSection" class="workout-section">
-        <!-- FTP & Action Row -->
-        <div class="ftp-config-row">
-          <div class="ftp-input-group">
-            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">FTP:</span>
-            <input type="number" id="inputFtp" min="60" max="600" value="200" aria-label="Functional Threshold Power">
-            <span style="font-size: 0.85rem; color: var(--text-muted);">Watts</span>
-          </div>
-          <div style="display: flex; gap: 6px;">
-            <button id="btnOpenLibrary" class="btn-step" style="padding: 8px 12px; font-size: 0.82rem; background: var(--accent-cyan); color: #000; font-weight: 800;">
-              📚 Library
-            </button>
-          </div>
+        <div style="display: flex; justify-content: flex-end;">
+          <button id="btnOpenLibrary" class="btn-step" style="padding: 8px 12px; font-size: 0.82rem; background: var(--accent-cyan); color: #000; font-weight: 800;">
+            📚 Library
+          </button>
         </div>
 
         <!-- Visual Workout Timeline -->
