@@ -62,6 +62,8 @@ export class ActivityRecorder {
     this.activeSince = now;
     this.timerMs = 0;
     this.distance = 0;
+    this.powerWork = 0;
+    this.powerDuration = 0;
     this.records = [];
     this.events = [{ time: now, type: 0 }];
     this.telemetry = {};
@@ -70,6 +72,7 @@ export class ActivityRecorder {
 
   update(data, now = Date.now()) {
     if (!this.active || this.paused) return;
+    this.integrate(now);
     for (const key of ['power', 'cadence', 'speed', 'heartRate']) {
       if (Number.isFinite(data[key]) && data[key] >= 0) {
         this.telemetry[key] = { value: data[key], time: now };
@@ -79,20 +82,35 @@ export class ActivityRecorder {
 
   sample(now = Date.now()) {
     if (!this.active || this.paused) return;
+    this.integrate(now);
     const values = {};
     for (const [key, reading] of Object.entries(this.telemetry)) {
       if (now - reading.time <= 5000) values[key] = reading.value;
     }
-    const speed = this.telemetry.speed;
-    if (speed) {
-      const end = Math.min(now, speed.time + 5000);
-      this.distance += speed.value / 3.6 * Math.max(0, end - this.lastSampleTime) / 1000;
-    }
-    this.lastSampleTime = now;
     const record = { time: now, distance: this.distance, ...values };
     const last = this.records[this.records.length - 1];
     if (last && fitTime(last.time) === fitTime(now)) this.records[this.records.length - 1] = record;
     else this.records.push(record);
+  }
+
+  integrate(now) {
+    for (const key of ['speed', 'power']) {
+      const reading = this.telemetry[key];
+      if (!reading) continue;
+      const end = Math.min(now, reading.time + 5000);
+      const seconds = Math.max(0, end - Math.max(this.lastSampleTime, reading.time)) / 1000;
+      if (key === 'speed') this.distance += reading.value / 3.6 * seconds;
+      else {
+        this.powerWork += reading.value * seconds;
+        this.powerDuration += seconds;
+      }
+    }
+    this.lastSampleTime = now;
+  }
+
+  clearTelemetry(now = Date.now()) {
+    if (this.active && !this.paused) this.integrate(now);
+    this.telemetry = {};
   }
 
   setPaused(paused, now = Date.now()) {
@@ -158,8 +176,8 @@ export class ActivityRecorder {
     const timer = Math.round(this.timerMs);
     const distance = scaled(this.distance, 100, 0xFFFFFFFE);
     const powerRecords = this.records.filter(record => record.power !== undefined);
-    const avgPower = powerRecords.length
-      ? scaled(powerRecords.reduce((sum, record) => sum + record.power, 0) / powerRecords.length, 1, 65534)
+    const avgPower = this.powerDuration
+      ? scaled(this.powerWork / this.powerDuration, 1, 65534)
       : undefined;
     const maxPower = powerRecords.length
       ? scaled(powerRecords.reduce((max, record) => Math.max(max, record.power), 0), 1, 65534)

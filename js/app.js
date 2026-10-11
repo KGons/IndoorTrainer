@@ -270,7 +270,7 @@ ftms.addEventListener('connected', async (e) => {
 });
 
 ftms.addEventListener('disconnected', () => {
-  activityRecorder.telemetry = {};
+  activityRecorder.clearTelemetry();
   statusDot.className = 'status-dot';
   statusText.textContent = 'Disconnected';
   btnConnect.className = 'btn-connect';
@@ -1519,6 +1519,5 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
-
 
 
