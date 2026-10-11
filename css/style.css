@@ -605,8 +605,8 @@ header {
 /* Zwift-style Bias Adjuster */
 .bias-container {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 8px;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 10px;
@@ -615,7 +615,9 @@ header {
 
 .bias-label-group {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .bias-value {
@@ -627,10 +629,12 @@ header {
 .bias-buttons {
   display: flex;
   gap: 4px;
+  width: 100%;
 }
 
 .btn-bias {
-  padding: 6px 10px;
+  flex: 1;
+  padding: 6px 4px;
   font-size: 0.8rem;
   font-weight: 700;
   border-radius: 6px;
@@ -638,6 +642,7 @@ header {
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   cursor: pointer;
+  text-align: center;
 }
 
 .btn-bias:active {
