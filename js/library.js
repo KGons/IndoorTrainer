@@ -144,7 +144,7 @@ export class WorkoutLibrary {
     return newWorkout;
   }
 
-  static deleteCustomWorkout(id) {
+  static deleteWorkout(id) {
     if (BUILTIN_WORKOUTS.some(workout => workout.id === id)) {
       const deleted = WorkoutLibrary.getDeletedBuiltinIds();
       if (!deleted.includes(id)) deleted.push(id);

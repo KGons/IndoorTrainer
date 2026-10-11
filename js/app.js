@@ -116,6 +116,8 @@ const btnCancelModal = document.getElementById('btnCancelModal');
 const btnApplyWorkout = document.getElementById('btnApplyWorkout');
 const btnSaveToLibrary = document.getElementById('btnSaveToLibrary');
 const inputWorkoutSaveName = document.getElementById('inputWorkoutSaveName');
+const inputWorkoutCategory = document.getElementById('inputWorkoutCategory');
+const inputWorkoutDescription = document.getElementById('inputWorkoutDescription');
 const workoutTextInput = document.getElementById('workoutTextInput');
 const btnTriggerUpload = document.getElementById('btnTriggerUpload');
 const fileCsvInput = document.getElementById('fileCsvInput');
@@ -984,15 +986,21 @@ document.querySelectorAll('[data-bias]').forEach((btn) => {
 
 // Modal Dialog & Workout Loader
 btnOpenWorkoutEditor.addEventListener('click', () => {
+  resetWorkoutEditor();
+  inputWorkoutSaveName.value = '';
+  inputWorkoutCategory.value = 'Custom';
+  inputWorkoutDescription.value = '';
   modalWorkout.classList.add('active');
 });
 
 btnCloseModal.addEventListener('click', () => {
   modalWorkout.classList.remove('active');
+  resetWorkoutEditor();
 });
 
 btnCancelModal.addEventListener('click', () => {
   modalWorkout.classList.remove('active');
+  resetWorkoutEditor();
 });
 
 function loadWorkoutFromText(rawText, name = 'Custom CSV Workout') {
@@ -1018,6 +1026,7 @@ btnApplyWorkout.addEventListener('click', () => {
   const name = inputWorkoutSaveName.value.trim() || 'Custom CSV Workout';
   if (loadWorkoutFromText(workoutTextInput.value, name)) {
     modalWorkout.classList.remove('active');
+    resetWorkoutEditor();
   }
 });
 
@@ -1036,6 +1045,7 @@ fileCsvInput.addEventListener('change', (e) => {
     workoutTextInput.value = content;
     const workoutName = file.name.replace(/\.[^/.]+$/, '');
     inputWorkoutSaveName.value = workoutName;
+    if (editingWorkoutId) return;
     loadWorkoutFromText(content, workoutName);
     modalWorkout.classList.remove('active');
   };
@@ -1047,6 +1057,34 @@ fileCsvInput.addEventListener('change', (e) => {
 // ==========================================
 
 let activeLibraryCategory = 'all';
+let editingWorkoutId = null;
+
+function resetWorkoutEditor() {
+  editingWorkoutId = null;
+  btnSaveToLibrary.textContent = '💾 Save to Library';
+  btnApplyWorkout.hidden = false;
+}
+
+function editWorkout(w) {
+  editingWorkoutId = w.id;
+  inputWorkoutSaveName.value = w.name;
+  inputWorkoutCategory.value = w.category;
+  inputWorkoutDescription.value = w.description || '';
+  workoutTextInput.value = w.csv;
+  btnSaveToLibrary.textContent = '💾 Save Changes';
+  btnApplyWorkout.hidden = true;
+  modalWorkout.classList.add('active');
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[char]);
+}
 
 function renderLibrary(filterCategory = 'all') {
   activeLibraryCategory = filterCategory;
@@ -1092,23 +1130,23 @@ function renderLibrary(filterCategory = 'all') {
     });
 
     const isCustomBadge = w.isCustom ? '<span class="workout-badge custom">Custom</span>' : '';
-    const deleteBtn = w.isCustom ? `<button data-del="${w.id}" style="background: transparent; border: none; color: #ef4444; font-size: 0.9rem; cursor: pointer;" title="Delete Workout">🗑</button>` : '';
 
     card.innerHTML = `
       <div class="workout-card-top">
         <div>
-          <div class="workout-card-title">${w.name}</div>
+          <div class="workout-card-title">${escapeHTML(w.name)}</div>
           <div style="display: flex; gap: 4px; margin-top: 4px;">
-            <span class="workout-badge">${w.category}</span>
+            <span class="workout-badge">${escapeHTML(w.category)}</span>
             ${isCustomBadge}
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
-          <button class="btn-step" data-load-id="${w.id}" style="padding: 6px 14px; font-size: 0.8rem; background: var(--accent-cyan); color: #000; font-weight: 800;">Select</button>
-          ${deleteBtn}
+          <button class="btn-step" data-load-id="${escapeHTML(w.id)}" style="padding: 6px 14px; font-size: 0.8rem; background: var(--accent-cyan); color: #000; font-weight: 800;">Select</button>
+          <button class="btn-step" data-edit="${escapeHTML(w.id)}" style="padding: 6px 10px; font-size: 0.8rem;" aria-label="Edit ${escapeHTML(w.name)}">Edit</button>
+          <button class="btn-step" data-del="${escapeHTML(w.id)}" style="padding: 6px 10px; font-size: 0.8rem; color: #ef4444;" aria-label="Delete ${escapeHTML(w.name)}">🗑</button>
         </div>
       </div>
-      <div class="workout-card-desc">${w.description || ''}</div>
+      <div class="workout-card-desc">${escapeHTML(w.description || '')}</div>
       <div class="mini-timeline">${miniBarsHtml}</div>
       <div class="workout-card-footer">
         <span class="workout-meta">⏱ ${formatDuration(totalSec)}</span>
@@ -1118,21 +1156,24 @@ function renderLibrary(filterCategory = 'all') {
 
     // Handle Card Click
     card.addEventListener('click', (e) => {
-      if (e.target.closest('[data-del]')) return;
+      if (e.target.closest('[data-del], [data-edit]')) return;
       selectAndLoadWorkout(w);
     });
 
-    // Delete custom workout
+    const editBtn = card.querySelector('[data-edit]');
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      editWorkout(w);
+    });
+
     const delBtn = card.querySelector('[data-del]');
-    if (delBtn) {
-      delBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (confirm(`Delete custom workout "${w.name}"?`)) {
-          WorkoutLibrary.deleteCustomWorkout(w.id);
-          renderLibrary(activeLibraryCategory);
-        }
-      });
-    }
+    delBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (confirm(`Delete workout "${w.name}"?`)) {
+        WorkoutLibrary.deleteWorkout(w.id);
+        renderLibrary(activeLibraryCategory);
+      }
+    });
 
     libraryList.appendChild(card);
   });
@@ -1184,11 +1225,29 @@ btnSaveToLibrary.addEventListener('click', () => {
   }
 
   const name = inputWorkoutSaveName.value.trim() || `Custom Workout (${intervals.length} seg)`;
-  const saved = WorkoutLibrary.saveCustomWorkout(name, 'Custom', `Custom workout (${formatDuration(intervals.reduce((a, c) => a + c.durationSec, 0))})`, csv);
-  
+  const category = inputWorkoutCategory.value || 'Custom';
+  const duration = formatDuration(intervals.reduce((a, c) => a + c.durationSec, 0));
+  const description = inputWorkoutDescription.value.trim() || `Custom workout (${duration})`;
+
+  if (editingWorkoutId) {
+    const updated = WorkoutLibrary.updateWorkout(editingWorkoutId, name, category, description, csv);
+    if (!updated) {
+      alert('This workout could not be found in the library. Please refresh and try again.');
+      return;
+    }
+    renderLibrary(activeLibraryCategory);
+    modalWorkout.classList.remove('active');
+    resetWorkoutEditor();
+    addLog(`Updated "${name}" in your Workout Library.`, 'info');
+    return;
+  }
+
+  const saved = WorkoutLibrary.saveCustomWorkout(name, category, description, csv);
   selectAndLoadWorkout(saved);
   modalWorkout.classList.remove('active');
+  resetWorkoutEditor();
   inputWorkoutSaveName.value = '';
+  inputWorkoutDescription.value = '';
   addLog(`Saved "${name}" to your Workout Library!`, 'info');
 });
 
@@ -1519,5 +1578,3 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
-
-
