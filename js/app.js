@@ -29,6 +29,7 @@ const btnToggleFullscreen = document.getElementById('btnToggleFullscreen');
 const btnOpenPhoneGuide = document.getElementById('btnOpenPhoneGuide');
 const btnToggleSettings = document.getElementById('btnToggleSettings');
 const btnCloseSettings = document.getElementById('btnCloseSettings');
+const btnCloseSettingsBtn = document.getElementById('btnCloseSettingsBtn');
 const settingsSection = document.getElementById('settingsSection');
 const modalPhoneGuide = document.getElementById('modalPhoneGuide');
 const btnClosePhoneGuide = document.getElementById('btnClosePhoneGuide');
@@ -515,18 +516,25 @@ if (btnToggleSound) {
   });
 }
 
-// Settings Pane
+// Settings Modal
 if (btnToggleSettings && settingsSection) {
-  const toggleSettings = () => {
+  const closeSettings = () => {
     triggerHaptic(30);
-    settingsSection.classList.toggle('active');
-    btnToggleSettings.classList.toggle('active', settingsSection.classList.contains('active'));
+    settingsSection.classList.remove('active');
+    btnToggleSettings.classList.remove('active');
   };
 
-  btnToggleSettings.addEventListener('click', toggleSettings);
+  btnToggleSettings.addEventListener('click', () => {
+    triggerHaptic(30);
+    settingsSection.classList.add('active');
+    btnToggleSettings.classList.add('active');
+  });
 
   if (btnCloseSettings) {
-    btnCloseSettings.addEventListener('click', toggleSettings);
+    btnCloseSettings.addEventListener('click', closeSettings);
+  }
+  if (btnCloseSettingsBtn) {
+    btnCloseSettingsBtn.addEventListener('click', closeSettings);
   }
 }
 

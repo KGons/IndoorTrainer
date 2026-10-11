@@ -511,41 +511,6 @@ header {
   gap: 12px;
 }
 
-.settings-section {
-  display: none;
-}
-
-.settings-section.active {
-  display: block;
-}
-
-.settings-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.settings-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.settings-close {
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  font-size: 1.1rem;
-  cursor: pointer;
-}
-
-.settings-body {
-  padding: 14px;
-}
-
 .settings-field {
   display: flex;
   align-items: center;
