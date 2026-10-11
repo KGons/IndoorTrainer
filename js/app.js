@@ -938,6 +938,7 @@ workoutRunner.addEventListener('tick', (e) => {
 
 workoutRunner.addEventListener('intervalchanged', (e) => {
   const d = e.detail;
+  activityRecorder.setWorkoutStep(d.index);
   intervalCountdown.textContent = formatDuration(d.interval.durationSec);
   syncWorkoutTargetToTrainer();
   renderWorkoutTimeline();
@@ -973,7 +974,7 @@ workoutRunner.addEventListener('biaschanged', (e) => {
 
 workoutRunner.addEventListener('started', () => {
   if (!activityRecorder.active) {
-    activityRecorder.start(workoutRunner.workoutName);
+    activityRecorder.start(workoutRunner.workoutName, Date.now(), workoutRunner.intervals, workoutRunner.ftp);
     recordingTimer = setInterval(() => activityRecorder.sample(), 1000);
   }
   initAudioContext();
