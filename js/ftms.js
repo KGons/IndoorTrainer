@@ -73,13 +73,11 @@ export class FTMSClient extends EventTarget {
       throw new Error('Web Bluetooth is not supported in this browser. Please use Google Chrome, Edge, or Samsung Internet on Android.');
     }
 
-    this.log('Scanning for Bluetooth devices (All devices enabled)...');
-    
-    // Using acceptAllDevices: true ensures the trainer is visible even if it
-    // does not broadcast the FTMS service UUID in its 31-byte advertising packet.
+    this.log('Scanning for FTMS-compatible trainers...');
+
     try {
       this.device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
+        filters: [{ services: [FTMS_UUIDS.FITNESS_MACHINE_SERVICE] }],
         optionalServices: [
           FTMS_UUIDS.FITNESS_MACHINE_SERVICE,
           FTMS_UUIDS.CYCLING_POWER_SERVICE,
