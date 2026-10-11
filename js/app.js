@@ -1093,10 +1093,7 @@ function renderLibrary(filterCategory = 'all') {
   const allWorkouts = WorkoutLibrary.getAllWorkouts();
   const filtered = filterCategory === 'all'
     ? allWorkouts
-    : allWorkouts.filter(w => {
-        if (filterCategory === 'Custom') return w.isCustom;
-        return w.category.toLowerCase().includes(filterCategory.toLowerCase());
-      });
+    : allWorkouts.filter(w => w.category.toLowerCase().includes(filterCategory.toLowerCase()));
 
   if (filtered.length === 0) {
     libraryList.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 24px;">No workouts found in this category.</div>';
