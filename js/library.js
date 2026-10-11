@@ -89,11 +89,35 @@ Cooldown,5,erg,0.40`
 ];
 
 const STORAGE_KEY = 'trainer_saved_workouts';
+const OVERRIDES_STORAGE_KEY = 'trainer_workout_overrides';
+const DELETED_STORAGE_KEY = 'trainer_deleted_workouts';
 
 export class WorkoutLibrary {
   static getAllWorkouts() {
+    const overrides = WorkoutLibrary.getBuiltinOverrides();
+    const deleted = WorkoutLibrary.getDeletedBuiltinIds();
     const custom = WorkoutLibrary.getCustomWorkouts();
-    return [...BUILTIN_WORKOUTS, ...custom];
+    const builtins = BUILTIN_WORKOUTS
+      .filter(workout => !deleted.includes(workout.id))
+      .map(workout => ({ ...workout, ...overrides[workout.id], isBuiltin: true }));
+    return [...builtins, ...custom];
+  }
+
+  static getBuiltinOverrides() {
+    try {
+      return JSON.parse(localStorage.getItem(OVERRIDES_STORAGE_KEY)) || {};
+    } catch {
+      return {};
+    }
+  }
+
+  static getDeletedBuiltinIds() {
+    try {
+      const ids = JSON.parse(localStorage.getItem(DELETED_STORAGE_KEY));
+      return Array.isArray(ids) ? ids : [];
+    } catch {
+      return [];
+    }
   }
 
   static getCustomWorkouts() {
@@ -120,10 +144,37 @@ export class WorkoutLibrary {
     return newWorkout;
   }
 
-  static deleteCustomWorkout(id) {
+  static deleteWorkout(id) {
+    if (BUILTIN_WORKOUTS.some(workout => workout.id === id)) {
+      const deleted = WorkoutLibrary.getDeletedBuiltinIds();
+      if (!deleted.includes(id)) deleted.push(id);
+      localStorage.setItem(DELETED_STORAGE_KEY, JSON.stringify(deleted));
+      const overrides = WorkoutLibrary.getBuiltinOverrides();
+      delete overrides[id];
+      localStorage.setItem(OVERRIDES_STORAGE_KEY, JSON.stringify(overrides));
+      return WorkoutLibrary.getAllWorkouts();
+    }
+
     const list = WorkoutLibrary.getCustomWorkouts().filter(w => w.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
     return list;
+  }
+
+  static updateWorkout(id, name, category, description, csv) {
+    const builtIn = BUILTIN_WORKOUTS.find(workout => workout.id === id);
+    if (builtIn) {
+      const overrides = WorkoutLibrary.getBuiltinOverrides();
+      overrides[id] = { name, category, description, csv };
+      localStorage.setItem(OVERRIDES_STORAGE_KEY, JSON.stringify(overrides));
+      return { ...builtIn, ...overrides[id], isBuiltin: true };
+    }
+
+    const list = WorkoutLibrary.getCustomWorkouts();
+    const index = list.findIndex(workout => workout.id === id);
+    if (index < 0) return null;
+    list[index] = { ...list[index], name, category, description, csv };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    return list[index];
   }
 
   static getWorkoutById(id) {

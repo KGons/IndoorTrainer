@@ -417,6 +417,16 @@
         </div>
 
         <input type="text" id="inputWorkoutSaveName" placeholder="Workout Name (e.g. My Killer 3x5min)" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 0.9rem; width: 100%;">
+        <select id="inputWorkoutCategory" class="workout-editor-select" aria-label="Workout category">
+          <option value="Threshold">Threshold</option>
+          <option value="VO2 Max">VO2 Max</option>
+          <option value="Climbing (Grade)">Climbing</option>
+          <option value="Sweet Spot">Sweet Spot</option>
+          <option value="Sprints">Sprints</option>
+          <option value="Recovery">Recovery</option>
+          <option value="Custom">Custom</option>
+        </select>
+        <input type="text" id="inputWorkoutDescription" placeholder="Workout description" style="background: var(--bg-primary); border: 1px solid var(--border-color); color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 0.9rem; width: 100%;">
 
         <textarea id="workoutTextInput" class="modal-textarea" spellcheck="false"># Format: Segment,Duration,Mode,Target
 Segment,Duration,Mode,Target

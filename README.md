@@ -7,7 +7,7 @@ A standalone, high-contrast mobile web app and installable Progressive Web App (
 
 | Feature | Description |
 |---|---|
-| **Workout Library** | Preloaded with Threshold (5x3m), VO2 Max (4x4m), Sweet Spot, Climbing, Sprints, and Recovery sessions. |
+| **Workout Library** | Includes editable and deletable preloaded workouts, plus saved custom workouts. |
 | **Workout Builder** | Create custom interval sessions with repeat sets, warmups, and cooldowns directly on your phone. |
 | **Zwift-Style Bias** | Increase or decrease interval difficulty on the fly (-5%, -1%, 100%, +1%, +5%). |
 | **Manual ERG Mode** | Set fixed target wattage (50W - 500W) with quick presets and steps. |

@@ -751,6 +751,16 @@ header {
   gap: 8px;
 }
 
+.workout-editor-select {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
 /* Workout Library Styles */
 .library-filters {
   display: flex;
@@ -1028,5 +1038,4 @@ header {
     display: none;
   }
 }
-
 
