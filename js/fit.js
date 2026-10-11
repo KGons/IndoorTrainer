@@ -202,7 +202,7 @@ export class ActivityRecorder {
             : /recover|rest/i.test(step.name) ? 4 : 0;
         writer.message(7, 27, [
           uint16(254), stringField(0, 32), enumField(1), uint32(2), enumField(3),
-          uint32(4), uint32(5), uint32(6), enumField(7), stringField(8, 255)
+          uint32(4), uint32(5), uint32(6), enumField(7), stringField(8, 202)
         ], [
           index, step.name, 0, Math.round(step.durationSec * 1000), targetType,
           0, power, power, intensity, targetNote
