@@ -228,6 +228,19 @@ header {
   color: #f87171;
 }
 
+.btn-hrm {
+  margin-top: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+  font-size: 0.95rem;
+}
+
+.btn-hrm:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 /* Big Metrics Display */
 .metrics-grid {
   display: grid;
@@ -1074,4 +1087,3 @@ header {
     display: none;
   }
 }
-

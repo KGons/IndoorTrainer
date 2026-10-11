@@ -14,6 +14,7 @@ A standalone, high-contrast mobile web app and installable Progressive Web App (
 | **Slope Simulation** | Set simulated climbing grades (-5% downhill to +15% climb). |
 | **Offline Cache** | Full PWA Service Worker caching for zero-network operation. |
 | **FIT Activity Export** | Records structured workouts and downloads a Garmin-compatible indoor cycling activity when stopped or completed. |
+| **External Heart Rate Strap** | Pair a Bluetooth LE heart rate strap independently of your trainer for live BPM and FIT recording. |
 
 
 ---
@@ -53,6 +54,13 @@ A standalone, high-contrast mobile web app and installable Progressive Web App (
 4. Tap **Connect Smart Trainer**.
 5. Select your trainer (e.g. `Elite Direto XR`, `KICKR`, `Tacx`) from the list and tap **Pair**.
 6. The app will confirm connection and display real-time telemetry (Watts, Cadence, Speed, Heart Rate).
+
+### External heart rate strap
+
+- Wake up your strap (wear it and moisten the electrodes if required), tap **Connect Heart Rate Strap**, then select it in the Bluetooth picker. Its name and connection status appear below the button. You can pair it before or after connecting the trainer.
+- Supports Bluetooth LE straps advertising the standard **Heart Rate Service (0x180D)**. ANT+-only straps are not supported. Use the same Web Bluetooth-capable browser and HTTPS setup as for the trainer; disconnect the strap from other apps if it cannot connect.
+- While the strap is connected, its heart rate takes priority over trainer heart rate, including in structured-workout FIT exports. Missing skin contact or readings older than five seconds display `--` rather than retaining old BPM.
+- Tap **Disconnect Heart Rate Strap** to unpair the current session. If it disconnects, new trainer heart rate readings are used when available. The trainer and workout continue unaffected; trainer disconnection does not disconnect the strap or clear its readings.
 
 ---
 

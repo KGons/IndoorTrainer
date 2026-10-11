@@ -108,9 +108,13 @@ export class ActivityRecorder {
     this.lastSampleTime = now;
   }
 
-  clearTelemetry(now = Date.now()) {
+  clearTelemetry(now = Date.now(), keys = null) {
     if (this.active && !this.paused) this.integrate(now);
-    this.telemetry = {};
+    if (keys) {
+      for (const key of keys) delete this.telemetry[key];
+    } else {
+      this.telemetry = {};
+    }
   }
 
   setPaused(paused, now = Date.now()) {
