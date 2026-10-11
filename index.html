@@ -288,6 +288,17 @@
     </div>
 
     <!-- Live Event & Protocol Log -->
+    <section id="fitExportPanel" class="fit-export-card" hidden aria-label="Recorded workout">
+      <div style="padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+        <strong>Workout FIT export</strong>
+        <p id="fitExportStatus" role="status"></p>
+        <button id="btnDownloadFit" class="btn-step">Download FIT</button>
+        <button id="btnShareFit" class="btn-step" hidden>Share FIT file</button>
+        <a class="btn-step" href="https://connect.garmin.com/modern/import-data" target="_blank" rel="noopener noreferrer">Open Garmin Connect Import</a>
+        <p style="font-size: 0.8rem; color: var(--text-muted);">Sign in on Garmin Connect web and upload the downloaded FIT file (use desktop mode on your phone if needed). Opening or sharing a file with the Garmin Connect mobile app does not reliably import recorded activities. This app cannot set a default app or automatically upload to Garmin.</p>
+      </div>
+    </section>
+
     <div class="log-card">
       <div class="log-header" id="logToggle">
         <span>Bluetooth Protocol Log (<span id="logCount">0</span>)</span>

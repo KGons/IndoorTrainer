@@ -425,7 +425,8 @@ header {
 }
 
 /* Debug / Log Panel */
-.log-card {
+.log-card,
+.fit-export-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
@@ -1027,6 +1028,5 @@ header {
     display: none;
   }
 }
-
 
 

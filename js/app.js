@@ -2,9 +2,11 @@
 import { FTMSClient } from './ftms.js';
 import { WorkoutRunner, WorkoutParser } from './workout.js';
 import { WorkoutLibrary } from './library.js';
+import { ActivityRecorder } from './fit.js';
 
 const ftms = new FTMSClient();
 const workoutRunner = new WorkoutRunner();
+const activityRecorder = new ActivityRecorder();
 
 // UI Elements
 const btnConnect = document.getElementById('btnConnect');
@@ -69,6 +71,36 @@ const btnWorkoutPrev = document.getElementById('btnWorkoutPrev');
 const btnWorkoutToggle = document.getElementById('btnWorkoutToggle');
 const btnWorkoutSkip = document.getElementById('btnWorkoutSkip');
 const btnWorkoutStop = document.getElementById('btnWorkoutStop');
+const fitExportPanel = document.getElementById('fitExportPanel');
+const fitExportStatus = document.getElementById('fitExportStatus');
+const btnDownloadFit = document.getElementById('btnDownloadFit');
+const btnShareFit = document.getElementById('btnShareFit');
+let recordedFitFile = null;
+let recordingTimer = null;
+
+function downloadFit() {
+  if (!recordedFitFile) return;
+  const url = URL.createObjectURL(recordedFitFile);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = recordedFitFile.name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+btnDownloadFit.addEventListener('click', downloadFit);
+btnShareFit.addEventListener('click', async () => {
+  if (!recordedFitFile) return;
+  try {
+    await navigator.share({ files: [recordedFitFile] });
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      addLog(`Sharing unavailable: ${err.message}. Use Download FIT instead.`, 'warn');
+    }
+  }
+});
 
 // Library Modal Elements
 const modalLibrary = document.getElementById('modalLibrary');
@@ -238,6 +270,7 @@ ftms.addEventListener('connected', async (e) => {
 });
 
 ftms.addEventListener('disconnected', () => {
+  activityRecorder.telemetry = {};
   statusDot.className = 'status-dot';
   statusText.textContent = 'Disconnected';
   btnConnect.className = 'btn-connect';
@@ -256,6 +289,7 @@ ftms.addEventListener('deviceinfo', (e) => {
 
 ftms.addEventListener('telemetry', (e) => {
   const d = e.detail;
+  activityRecorder.update(d);
 
   // Power
   if (d.power !== undefined) {
@@ -844,6 +878,10 @@ workoutRunner.addEventListener('biaschanged', (e) => {
 });
 
 workoutRunner.addEventListener('started', () => {
+  if (!activityRecorder.active) {
+    activityRecorder.start(workoutRunner.workoutName);
+    recordingTimer = setInterval(() => activityRecorder.sample(), 1000);
+  }
   initAudioContext();
   triggerHaptic([80, 50, 80]);
   requestWakeLock();
@@ -855,6 +893,7 @@ workoutRunner.addEventListener('started', () => {
 });
 
 workoutRunner.addEventListener('paused', (e) => {
+  activityRecorder.setPaused(e.detail.isPaused);
   triggerHaptic(50);
   if (e.detail.isPaused) {
     btnWorkoutToggle.textContent = '▶ Resume';
@@ -868,6 +907,18 @@ workoutRunner.addEventListener('paused', (e) => {
 });
 
 workoutRunner.addEventListener('stopped', () => {
+  clearInterval(recordingTimer);
+  recordingTimer = null;
+  const activity = activityRecorder.stop();
+  if (activity) {
+    const date = new Date(activity.startTime).toISOString().replace(/[:.]/g, '-');
+    recordedFitFile = new File([activity.bytes], `indoor-cycling-${date}.fit`, { type: 'application/octet-stream' });
+    fitExportPanel.hidden = false;
+    fitExportStatus.textContent = `${activity.name}: FIT file ready. Download, then upload to Garmin Connect.`;
+    btnShareFit.hidden = !(navigator.canShare && navigator.canShare({ files: [recordedFitFile] }));
+    downloadFit();
+    addLog('Workout saved as FIT. Upload it using Garmin Connect web Import Data.', 'info');
+  }
   triggerHaptic(50);
   btnWorkoutToggle.textContent = '▶ Start Workout';
   btnWorkoutToggle.className = 'btn-workout-main btn-play';
@@ -1468,7 +1519,6 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
-
 
 
 
