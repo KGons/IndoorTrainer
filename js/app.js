@@ -26,14 +26,10 @@ const hrmStatus = document.getElementById('hrmStatus');
 const btnInstallPwa = document.getElementById('btnInstallPwa');
 const btnToggleSound = document.getElementById('btnToggleSound');
 const btnToggleFullscreen = document.getElementById('btnToggleFullscreen');
-const btnOpenPhoneGuide = document.getElementById('btnOpenPhoneGuide');
 const btnToggleSettings = document.getElementById('btnToggleSettings');
 const btnCloseSettings = document.getElementById('btnCloseSettings');
 const btnCloseSettingsBtn = document.getElementById('btnCloseSettingsBtn');
 const settingsSection = document.getElementById('settingsSection');
-const modalPhoneGuide = document.getElementById('modalPhoneGuide');
-const btnClosePhoneGuide = document.getElementById('btnClosePhoneGuide');
-const btnClosePhoneGuideBtn = document.getElementById('btnClosePhoneGuideBtn');
 
 // Metric Elements
 const valPower = document.getElementById('valPower');
@@ -535,20 +531,6 @@ if (btnToggleSettings && settingsSection) {
   }
   if (btnCloseSettingsBtn) {
     btnCloseSettingsBtn.addEventListener('click', closeSettings);
-  }
-}
-
-// Standalone Phone Setup / Help Modal
-if (btnOpenPhoneGuide && modalPhoneGuide) {
-  btnOpenPhoneGuide.addEventListener('click', () => {
-    triggerHaptic(30);
-    modalPhoneGuide.classList.add('active');
-  });
-  if (btnClosePhoneGuide) {
-    btnClosePhoneGuide.addEventListener('click', () => modalPhoneGuide.classList.remove('active'));
-  }
-  if (btnClosePhoneGuideBtn) {
-    btnClosePhoneGuideBtn.addEventListener('click', () => modalPhoneGuide.classList.remove('active'));
   }
 }
 
