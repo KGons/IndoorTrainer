@@ -1360,7 +1360,7 @@ function renderBuilderSegments() {
     else if (seg.mode === 'resistance') targetPlaceholder = 'Level (e.g. 8)';
 
     row.innerHTML = `
-      <input type="text" class="builder-input seg-name" value="${seg.name}" placeholder="Name">
+      <input type="text" class="builder-input seg-name" value="${escapeHTML(seg.name)}" placeholder="Name">
       <div style="display: flex; align-items: center; gap: 4px;">
         <input type="number" class="builder-input seg-dur" value="${seg.durationMin}" step="0.5" min="0.1" style="width: 55px; text-align: center;">
         <span style="font-size: 0.75rem; color: var(--text-muted);">min</span>
@@ -1371,7 +1371,7 @@ function renderBuilderSegments() {
         <option value="grade" ${seg.mode === 'grade' ? 'selected' : ''}>Grade / Slope</option>
         <option value="resistance" ${seg.mode === 'resistance' ? 'selected' : ''}>Resistance</option>
       </select>
-      <input type="text" class="builder-input seg-target" value="${seg.targetVal}" placeholder="${targetPlaceholder}">
+      <input type="text" class="builder-input seg-target" value="${escapeHTML(seg.targetVal)}" placeholder="${targetPlaceholder}">
       <button class="builder-btn-del" data-remove="${idx}" title="Remove">✕</button>
     `;
 
