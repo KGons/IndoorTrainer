@@ -573,6 +573,7 @@ btnConnect.addEventListener('click', async () => {
   if (ftms.isConnected) {
     await ftms.disconnect();
   } else {
+    btnConnect.disabled = true;
     try {
       statusDot.className = 'status-dot connecting';
       statusText.textContent = 'Connecting...';
@@ -593,6 +594,8 @@ btnConnect.addEventListener('click', async () => {
         logBox.style.display = 'flex';
         logArrow.textContent = '▲';
       }
+    } finally {
+      btnConnect.disabled = false;
     }
   }
 });
@@ -1119,6 +1122,8 @@ btnTriggerUpload.addEventListener('click', () => {
 
 fileCsvInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
+  // Reset so selecting the same file again still fires 'change'.
+  e.target.value = '';
   if (!file) return;
 
   const reader = new FileReader();
