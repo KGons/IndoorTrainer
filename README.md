@@ -39,7 +39,7 @@ A standalone, high-contrast mobile web app and installable Progressive Web App (
 ---
 
 ## 🚀 How to Run Standalone on Your Phone
-1. GitHub provides a secure HTTPS URL: `https://kgons.github.io/indoor-trainer/`
+1. GitHub provides a secure HTTPS URL: `https://kgons.github.io/IndoorTrainer/`
 2. Open this URL on your **Android phone in Google Chrome**.
 3. Tap the **📲 Install** button in the header (or tap Chrome Menu `⋮` → **Install app** / **Add to Home screen**).
 4. **Done!** You now have a standalone app icon on your phone. You can turn off your PC forever.
