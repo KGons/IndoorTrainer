@@ -745,17 +745,10 @@ inputFtp.value = workoutRunner.getFtp();
 inputFtp.addEventListener('change', (e) => {
   const val = parseInt(e.target.value, 10);
   workoutRunner.setFtp(val);
+  inputFtp.value = workoutRunner.ftp;
   renderWorkoutTimeline();
   syncWorkoutTargetToTrainer();
   addLog(`User FTP updated to ${workoutRunner.ftp}W`, 'info');
-});
-
-inputFtp.addEventListener('input', (e) => {
-  const val = parseInt(e.target.value, 10);
-  if (Number.isNaN(val)) return;
-  workoutRunner.setFtp(val);
-  renderWorkoutTimeline();
-  syncWorkoutTargetToTrainer();
 });
 
 // Sync workout target to trainer
