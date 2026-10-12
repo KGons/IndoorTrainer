@@ -1348,14 +1348,25 @@ if (defaultWorkout) {
 // ==========================================
 
 let builderSegments = [
-  { id: 'b-1', name: 'Warmup', durationMin: 5, mode: 'erg_pct', targetVal: '0.50' },
-  { id: 'b-2', name: 'Interval 1', durationMin: 3, mode: 'erg_pct', targetVal: '0.90' },
-  { id: 'b-3', name: 'Rest 1', durationMin: 1, mode: 'erg_watts', targetVal: '120' },
-  { id: 'b-4', name: 'Interval 2', durationMin: 3, mode: 'erg_pct', targetVal: '0.90' },
-  { id: 'b-5', name: 'Rest 2', durationMin: 1, mode: 'erg_watts', targetVal: '120' },
-  { id: 'b-6', name: 'Hill Climb', durationMin: 4, mode: 'grade', targetVal: '6.0' },
-  { id: 'b-7', name: 'Cooldown', durationMin: 5, mode: 'erg_watts', targetVal: '110' }
+  { id: 'b-1', name: 'Warmup', durationSec: 300, mode: 'erg_pct', targetVal: '0.50' },
+  { id: 'b-2', name: 'Interval 1', durationSec: 180, mode: 'erg_pct', targetVal: '0.90' },
+  { id: 'b-3', name: 'Rest 1', durationSec: 60, mode: 'erg_watts', targetVal: '120' },
+  { id: 'b-4', name: 'Interval 2', durationSec: 180, mode: 'erg_pct', targetVal: '0.90' },
+  { id: 'b-5', name: 'Rest 2', durationSec: 60, mode: 'erg_watts', targetVal: '120' },
+  { id: 'b-6', name: 'Hill Climb', durationSec: 240, mode: 'grade', targetVal: '6.0' },
+  { id: 'b-7', name: 'Cooldown', durationSec: 300, mode: 'erg_watts', targetVal: '110' }
 ];
+
+function formatBuilderDuration(durationSec) {
+  const hours = Math.floor(durationSec / 3600);
+  const minutes = Math.floor((durationSec % 3600) / 60);
+  const seconds = durationSec % 60;
+
+  if (hours > 0) return `${hours}h${minutes ? `${minutes}m` : ''}${seconds ? `${seconds}s` : ''}`;
+  if (minutes > 0 && seconds > 0) return `${minutes}m${seconds}s`;
+  if (minutes > 0) return `${durationSec / 60}`;
+  return `${seconds}s`;
+}
 
 function renderBuilderSegments() {
   builderSegmentsList.innerHTML = '';
@@ -1373,8 +1384,7 @@ function renderBuilderSegments() {
     row.innerHTML = `
       <input type="text" class="builder-input seg-name" value="${escapeHTML(seg.name)}" placeholder="Name">
       <div style="display: flex; align-items: center; gap: 4px;">
-        <input type="number" class="builder-input seg-dur" value="${seg.durationMin}" step="0.5" min="0.1" style="width: 55px; text-align: center;">
-        <span style="font-size: 0.75rem; color: var(--text-muted);">min</span>
+        <input type="text" class="builder-input seg-dur" value="${formatBuilderDuration(seg.durationSec)}" placeholder="e.g. 5m or 1h20m45s" style="width: 100px; text-align: center;">
       </div>
       <select class="builder-select seg-mode">
         <option value="erg_pct" ${seg.mode === 'erg_pct' ? 'selected' : ''}>ERG (% FTP)</option>
@@ -1393,7 +1403,8 @@ function renderBuilderSegments() {
 
     const durInput = row.querySelector('.seg-dur');
     durInput.addEventListener('input', (e) => {
-      seg.durationMin = parseFloat(e.target.value) || 1;
+      const durationSec = WorkoutParser._parseDuration(e.target.value);
+      if (durationSec > 0) seg.durationSec = durationSec;
       updateBuilderPreview();
     });
 
@@ -1444,7 +1455,7 @@ function updateBuilderPreview() {
 
   let totalSec = 0;
   builderSegments.forEach(s => {
-    totalSec += Math.round((s.durationMin || 1) * 60);
+    totalSec += s.durationSec;
   });
 
   builderTotalDuration.textContent = `Total: ${formatDuration(totalSec)}`;
@@ -1452,7 +1463,7 @@ function updateBuilderPreview() {
   builderSegments.forEach((seg) => {
     const bar = document.createElement('div');
     bar.className = 'timeline-bar';
-    const durSec = Math.round((seg.durationMin || 1) * 60);
+    const durSec = seg.durationSec;
     const widthPct = Math.max(2, (durSec / totalSec) * 100);
     bar.style.width = `${widthPct}%`;
 
@@ -1481,7 +1492,7 @@ function updateBuilderPreview() {
       else bar.classList.add('zone-z6');
     }
 
-    bar.title = `${seg.name} (${seg.durationMin}m)`;
+    bar.title = `${seg.name} (${formatBuilderDuration(seg.durationSec)})`;
     builderTimelinePreview.appendChild(bar);
   });
 }
@@ -1506,7 +1517,7 @@ function generateBuilderCSV() {
       targetStr = s.targetVal;
     }
 
-    lines.push(`${s.name.replace(/,/g, ' ')},${s.durationMin},${modeStr},${targetStr}`);
+    lines.push(`${s.name.replace(/,/g, ' ')},${formatBuilderDuration(s.durationSec)},${modeStr},${targetStr}`);
   });
   return lines.join('\n');
 }
@@ -1516,7 +1527,7 @@ btnAddSegmentBtn.addEventListener('click', () => {
   builderSegments.push({
     id: 'b-' + Date.now(),
     name: `Interval ${builderSegments.length + 1}`,
-    durationMin: 3,
+    durationSec: 180,
     mode: 'erg_pct',
     targetVal: '0.90'
   });
@@ -1528,7 +1539,7 @@ btnAddWarmupPreset.addEventListener('click', () => {
   builderSegments.unshift({
     id: 'b-' + Date.now(),
     name: 'Warmup Spin',
-    durationMin: 5,
+    durationSec: 300,
     mode: 'erg_pct',
     targetVal: '0.50'
   });
@@ -1540,7 +1551,7 @@ btnAddCooldownPreset.addEventListener('click', () => {
   builderSegments.push({
     id: 'b-' + Date.now(),
     name: 'Cooldown',
-    durationMin: 5,
+    durationSec: 300,
     mode: 'erg_watts',
     targetVal: '110'
   });
@@ -1558,9 +1569,9 @@ btnCloseRepeatBox.addEventListener('click', () => {
 
 btnConfirmAddRepeat.addEventListener('click', () => {
   const count = parseInt(repeatCountInput.value, 10) || 3;
-  const workDur = parseFloat(repeatWorkDurInput.value) || 3;
+  const workDur = WorkoutParser._parseDuration(repeatWorkDurInput.value) || 180;
   const workTarget = repeatWorkTargetInput.value.trim() || '0.90';
-  const restDur = parseFloat(repeatRestDurInput.value) || 1;
+  const restDur = WorkoutParser._parseDuration(repeatRestDurInput.value) || 60;
   const restTarget = repeatRestTargetInput.value.trim() || '120';
 
   const isWorkWatts = parseFloat(workTarget) > 2.5;
@@ -1570,14 +1581,14 @@ btnConfirmAddRepeat.addEventListener('click', () => {
     builderSegments.push({
       id: `b-work-${Date.now()}-${r}`,
       name: `Set (${r}/${count})`,
-      durationMin: workDur,
+      durationSec: workDur,
       mode: isWorkWatts ? 'erg_watts' : 'erg_pct',
       targetVal: workTarget
     });
     builderSegments.push({
       id: `b-rest-${Date.now()}-${r}`,
       name: `Rest (${r}/${count})`,
-      durationMin: restDur,
+      durationSec: restDur,
       mode: isRestWatts ? 'erg_watts' : 'erg_pct',
       targetVal: restTarget
     });
@@ -1620,7 +1631,7 @@ btnSaveBuilderToLibrary.addEventListener('click', () => {
   const category = builderCategory.value || 'Custom';
 
   let totalSec = 0;
-  builderSegments.forEach(s => totalSec += Math.round((s.durationMin || 1) * 60));
+  builderSegments.forEach(s => totalSec += s.durationSec);
 
   const saved = WorkoutLibrary.saveCustomWorkout(
     name,

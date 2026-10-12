@@ -394,7 +394,7 @@ export class WorkoutParser {
     };
   }
 
-  // Parses durations: "5" (5 min), "3.5" (3.5 min), "03:30" (3m30s), "45s" (45 sec)
+  // Parses durations: "5" (5 min), "03:30" (3m30s), "45s", or "1h20m45s"
   static _parseDuration(str) {
     if (!str) return 0;
     const clean = str.trim().toLowerCase();
@@ -405,14 +405,19 @@ export class WorkoutParser {
       return Math.round(m * 60 + s);
     }
 
-    // Seconds format (e.g. 45s, 30sec)
-    if (/^[\d.]+\s*(s|secs?|seconds?)$/.test(clean)) {
-      return Math.round(parseFloat(clean) || 0);
+    // Compound time units (e.g. 1h20m45s, 20m45s, or 45s)
+    const units = clean.match(/^(?:(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\s*)?(?:(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)\s*)?(?:(\d+(?:\.\d+)?)\s*(?:s|sec|secs|second|seconds))?$/);
+    if (units && units.slice(1).some(value => value !== undefined)) {
+      const [, hours = 0, minutes = 0, seconds = 0] = units;
+      return Math.round(Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds));
     }
 
-    // Default: minutes (e.g. 5, 3.5, 5m, 5min)
-    const mins = parseFloat(clean.replace(/[^\d\.]/g, '')) || 0;
-    return Math.round(mins * 60);
+    // Default: minutes (e.g. 5 or 3.5)
+    if (/^\d+(?:\.\d+)?$/.test(clean)) {
+      return Math.round(Number(clean) * 60);
+    }
+
+    return 0;
   }
 
   // Converts interval objects into standard CSV string
@@ -447,4 +452,3 @@ export class WorkoutParser {
     return lines.join('\n');
   }
 }
-
