@@ -194,13 +194,17 @@ logToggle.addEventListener('click', () => {
 // Screen Wake Lock
 async function requestWakeLock() {
   if ('wakeLock' in navigator) {
+    if (wakeLock) return;
     try {
-      wakeLock = await navigator.wakeLock.request('screen');
+      const sentinel = await navigator.wakeLock.request('screen');
+      wakeLock = sentinel;
       wakeLockStatus.textContent = '☀️ Screen Awake: ON';
       wakeLockStatus.classList.add('active');
       addLog('Screen wake lock enabled (screen will stay awake while riding).', 'info');
 
-      wakeLock.addEventListener('release', () => {
+      sentinel.addEventListener('release', () => {
+        // The system releases the lock when the page is hidden; clear it so it can be re-acquired.
+        if (wakeLock === sentinel) wakeLock = null;
         wakeLockStatus.textContent = '☀️ Screen Awake: Off';
         wakeLockStatus.classList.remove('active');
       });
@@ -375,11 +379,11 @@ ftms.addEventListener('telemetry', (e) => {
         else if (delta < -10) valPower.style.color = '#38bdf8';
         else valPower.style.color = 'var(--accent-orange)';
       } else if (curr && curr.mode === 'grade') {
-        const grade = curr.targetValue;
+        const grade = workoutRunner.getCurrentTargetGrade() || 0;
         powerDeltaSub.textContent = `Grade: ${grade >= 0 ? '+' : ''}${grade.toFixed(1)}% simulated incline`;
         valPower.style.color = grade > 4 ? 'var(--accent-orange)' : 'var(--accent-cyan)';
       } else if (curr && curr.mode === 'resistance') {
-        powerDeltaSub.textContent = `Resistance Level ${curr.targetValue} active`;
+        powerDeltaSub.textContent = `Resistance Level ${workoutRunner.getCurrentTargetResistance()} active`;
         valPower.style.color = 'var(--accent-yellow)';
       }
     } else if (currentMode === 'erg') {
@@ -569,6 +573,7 @@ btnConnect.addEventListener('click', async () => {
   if (ftms.isConnected) {
     await ftms.disconnect();
   } else {
+    btnConnect.disabled = true;
     try {
       statusDot.className = 'status-dot connecting';
       statusText.textContent = 'Connecting...';
@@ -584,10 +589,13 @@ btnConnect.addEventListener('click', async () => {
       statusText.textContent = 'Failed: ' + (err.name || 'Error');
       addLog(`Connection failed: ${err.message}`, 'error');
       // Auto-expand log box so the user sees the diagnostic details immediately
-      if (logBox.style.display === 'none') {
-        logBox.style.display = 'block';
+      if (!logExpanded) {
+        logExpanded = true;
+        logBox.style.display = 'flex';
         logArrow.textContent = '▲';
       }
+    } finally {
+      btnConnect.disabled = false;
     }
   }
 });
@@ -745,17 +753,10 @@ inputFtp.value = workoutRunner.getFtp();
 inputFtp.addEventListener('change', (e) => {
   const val = parseInt(e.target.value, 10);
   workoutRunner.setFtp(val);
+  inputFtp.value = workoutRunner.ftp;
   renderWorkoutTimeline();
   syncWorkoutTargetToTrainer();
   addLog(`User FTP updated to ${workoutRunner.ftp}W`, 'info');
-});
-
-inputFtp.addEventListener('input', (e) => {
-  const val = parseInt(e.target.value, 10);
-  if (Number.isNaN(val)) return;
-  workoutRunner.setFtp(val);
-  renderWorkoutTimeline();
-  syncWorkoutTargetToTrainer();
 });
 
 // Sync workout target to trainer
@@ -812,7 +813,7 @@ function syncWorkoutTargetToTrainer() {
     }
 
     if (ftms.isConnected && (workoutRunner.isRunning || currentMode === 'workout')) {
-      ftms._writeControl([0x04, Math.round(res)]).catch((err) => {
+      ftms.setTargetResistance(res).catch((err) => {
         addLog(`Failed to set resistance level: ${err.message}`, 'error');
       });
     }
@@ -1095,6 +1096,7 @@ function loadWorkoutFromText(rawText, name = 'Custom CSV Workout') {
   }
 
   workoutRunner.loadWorkout(intervals, name);
+  biasDisplay.textContent = `${workoutRunner.intensityBias}%`;
   const first = workoutRunner.getCurrentInterval();
   if (first) {
     intervalCountdown.textContent = formatDuration(first.durationSec);
@@ -1120,6 +1122,8 @@ btnTriggerUpload.addEventListener('click', () => {
 
 fileCsvInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
+  // Reset so selecting the same file again still fires 'change'.
+  e.target.value = '';
   if (!file) return;
 
   const reader = new FileReader();
@@ -1367,7 +1371,7 @@ function renderBuilderSegments() {
     else if (seg.mode === 'resistance') targetPlaceholder = 'Level (e.g. 8)';
 
     row.innerHTML = `
-      <input type="text" class="builder-input seg-name" value="${seg.name}" placeholder="Name">
+      <input type="text" class="builder-input seg-name" value="${escapeHTML(seg.name)}" placeholder="Name">
       <div style="display: flex; align-items: center; gap: 4px;">
         <input type="number" class="builder-input seg-dur" value="${seg.durationMin}" step="0.5" min="0.1" style="width: 55px; text-align: center;">
         <span style="font-size: 0.75rem; color: var(--text-muted);">min</span>
@@ -1378,7 +1382,7 @@ function renderBuilderSegments() {
         <option value="grade" ${seg.mode === 'grade' ? 'selected' : ''}>Grade / Slope</option>
         <option value="resistance" ${seg.mode === 'resistance' ? 'selected' : ''}>Resistance</option>
       </select>
-      <input type="text" class="builder-input seg-target" value="${seg.targetVal}" placeholder="${targetPlaceholder}">
+      <input type="text" class="builder-input seg-target" value="${escapeHTML(seg.targetVal)}" placeholder="${targetPlaceholder}">
       <button class="builder-btn-del" data-remove="${idx}" title="Remove">✕</button>
     `;
 

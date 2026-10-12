@@ -17,6 +17,7 @@ export class WorkoutRunner extends EventTarget {
   }
 
   setFtp(watts) {
+    if (!Number.isFinite(watts)) return;
     this.ftp = Math.max(50, Math.min(600, Math.round(watts)));
     localStorage.setItem('trainer_ftp', this.ftp);
     this.dispatchEvent(new CustomEvent('ftpchanged', { detail: { ftp: this.ftp } }));
@@ -24,8 +25,9 @@ export class WorkoutRunner extends EventTarget {
 
   getFtp() {
     const saved = localStorage.getItem('trainer_ftp');
-    if (saved) {
-      this.ftp = parseInt(saved, 10);
+    const parsed = parseInt(saved, 10);
+    if (Number.isFinite(parsed)) {
+      this.ftp = Math.max(50, Math.min(600, parsed));
     }
     return this.ftp;
   }
@@ -363,6 +365,7 @@ export class WorkoutParser {
       const hasPercent = cleanTarget.endsWith('%');
       const hasWatts = cleanTarget.endsWith('w');
       const numVal = parseFloat(cleanTarget.replace(/[^\d\.]/g, ''));
+      if (!Number.isFinite(numVal)) return null;
 
       if (hasPercent) {
         targetType = 'pct_ftp';
@@ -403,7 +406,7 @@ export class WorkoutParser {
     }
 
     // Seconds format (e.g. 45s, 30sec)
-    if (clean.endsWith('s') || clean.endsWith('sec')) {
+    if (/^[\d.]+\s*(s|secs?|seconds?)$/.test(clean)) {
       return Math.round(parseFloat(clean) || 0);
     }
 
