@@ -194,13 +194,17 @@ logToggle.addEventListener('click', () => {
 // Screen Wake Lock
 async function requestWakeLock() {
   if ('wakeLock' in navigator) {
+    if (wakeLock) return;
     try {
-      wakeLock = await navigator.wakeLock.request('screen');
+      const sentinel = await navigator.wakeLock.request('screen');
+      wakeLock = sentinel;
       wakeLockStatus.textContent = '☀️ Screen Awake: ON';
       wakeLockStatus.classList.add('active');
       addLog('Screen wake lock enabled (screen will stay awake while riding).', 'info');
 
-      wakeLock.addEventListener('release', () => {
+      sentinel.addEventListener('release', () => {
+        // The system releases the lock when the page is hidden; clear it so it can be re-acquired.
+        if (wakeLock === sentinel) wakeLock = null;
         wakeLockStatus.textContent = '☀️ Screen Awake: Off';
         wakeLockStatus.classList.remove('active');
       });
