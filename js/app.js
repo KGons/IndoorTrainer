@@ -379,11 +379,11 @@ ftms.addEventListener('telemetry', (e) => {
         else if (delta < -10) valPower.style.color = '#38bdf8';
         else valPower.style.color = 'var(--accent-orange)';
       } else if (curr && curr.mode === 'grade') {
-        const grade = curr.targetValue;
+        const grade = workoutRunner.getCurrentTargetGrade() || 0;
         powerDeltaSub.textContent = `Grade: ${grade >= 0 ? '+' : ''}${grade.toFixed(1)}% simulated incline`;
         valPower.style.color = grade > 4 ? 'var(--accent-orange)' : 'var(--accent-cyan)';
       } else if (curr && curr.mode === 'resistance') {
-        powerDeltaSub.textContent = `Resistance Level ${curr.targetValue} active`;
+        powerDeltaSub.textContent = `Resistance Level ${workoutRunner.getCurrentTargetResistance()} active`;
         valPower.style.color = 'var(--accent-yellow)';
       }
     } else if (currentMode === 'erg') {
@@ -588,8 +588,9 @@ btnConnect.addEventListener('click', async () => {
       statusText.textContent = 'Failed: ' + (err.name || 'Error');
       addLog(`Connection failed: ${err.message}`, 'error');
       // Auto-expand log box so the user sees the diagnostic details immediately
-      if (logBox.style.display === 'none') {
-        logBox.style.display = 'block';
+      if (!logExpanded) {
+        logExpanded = true;
+        logBox.style.display = 'flex';
         logArrow.textContent = '▲';
       }
     }
@@ -1092,6 +1093,7 @@ function loadWorkoutFromText(rawText, name = 'Custom CSV Workout') {
   }
 
   workoutRunner.loadWorkout(intervals, name);
+  biasDisplay.textContent = `${workoutRunner.intensityBias}%`;
   const first = workoutRunner.getCurrentInterval();
   if (first) {
     intervalCountdown.textContent = formatDuration(first.durationSec);
