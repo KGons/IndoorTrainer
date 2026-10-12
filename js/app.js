@@ -812,7 +812,7 @@ function syncWorkoutTargetToTrainer() {
     }
 
     if (ftms.isConnected && (workoutRunner.isRunning || currentMode === 'workout')) {
-      ftms._writeControl([0x04, Math.round(res)]).catch((err) => {
+      ftms.setTargetResistance(res).catch((err) => {
         addLog(`Failed to set resistance level: ${err.message}`, 'error');
       });
     }

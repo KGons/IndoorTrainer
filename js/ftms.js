@@ -346,6 +346,12 @@ export class FTMSClient extends EventTarget {
       offset += 1;
     }
 
+    // Metabolic Equivalent (bit 10) - uint8 (0.1 resolution)
+    if ((flags & (1 << 10)) !== 0 && offset + 1 <= dataView.byteLength) {
+      data.metabolicEquivalent = dataView.getUint8(offset) / 10;
+      offset += 1;
+    }
+
     // Elapsed Time (bit 11) - uint16 (seconds)
     if ((flags & (1 << 11)) !== 0 && offset + 2 <= dataView.byteLength) {
       data.elapsedSeconds = dataView.getUint16(offset, true);
@@ -421,6 +427,13 @@ export class FTMSClient extends EventTarget {
     await this._writeControl(buffer);
     this.lastTargetWatts = roundedWatts;
     this.dispatchEvent(new CustomEvent('targetpowerchanged', { detail: { targetWatts: roundedWatts } }));
+  }
+
+  // Set Target Resistance Level (OpCode 0x04 + uint8 level in 0.1 units)
+  async setTargetResistance(level) {
+    const raw = Math.max(0, Math.min(255, Math.round(level * 10)));
+    this.log(`Setting Target Resistance Level: ${raw / 10}...`);
+    await this._writeControl([FTMS_OPCODE.SET_TARGET_RESISTANCE, raw]);
   }
 
   // Set Simulation Parameters (OpCode 0x11: Grade %, Wind, Crr, Cw)
