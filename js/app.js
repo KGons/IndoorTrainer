@@ -34,14 +34,11 @@ const settingsSection = document.getElementById('settingsSection');
 // Metric Elements
 const valPower = document.getElementById('valPower');
 const valCadence = document.getElementById('valCadence');
-const valSpeed = document.getElementById('valSpeed');
 const valTime = document.getElementById('valTime');
 const valHeartRate = document.getElementById('valHeartRate');
 const targetWattsHeader = document.getElementById('targetWattsHeader');
 const powerDeltaSub = document.getElementById('powerDeltaSub');
-const distanceSub = document.getElementById('distanceSub');
 const cadenceSub = document.getElementById('cadenceSub');
-const caloriesSub = document.getElementById('caloriesSub');
 
 // Control Elements
 const tabErg = document.getElementById('tabErg');
@@ -80,8 +77,78 @@ const fitExportPanel = document.getElementById('fitExportPanel');
 const fitExportStatus = document.getElementById('fitExportStatus');
 const btnDownloadFit = document.getElementById('btnDownloadFit');
 const btnShareFit = document.getElementById('btnShareFit');
+const freeRideControls = document.getElementById('freeRideControls');
+const btnRideStart = document.getElementById('btnRideStart');
+const btnRideStop = document.getElementById('btnRideStop');
+const rideRecordingStatus = document.getElementById('rideRecordingStatus');
 let recordedFitFile = null;
 let recordingTimer = null;
+let recordingType = null;
+
+function updateRecordingControls() {
+  const freeRideActive = recordingType === 'free';
+  freeRideControls.hidden = currentMode === 'workout' && !freeRideActive;
+  btnRideStart.disabled = activityRecorder.active || workoutRunner.isRunning;
+  btnRideStop.disabled = !freeRideActive;
+  tabWorkout.disabled = freeRideActive;
+  rideRecordingStatus.textContent = freeRideActive
+    ? 'Recording ride. Stop to save a Garmin-compatible FIT file.'
+    : 'Start logging an ERG or slope ride.';
+}
+
+function updateRecordingTime() {
+  const now = Date.now();
+  activityRecorder.sample(now);
+  const timerMs = activityRecorder.timerMs
+    + (activityRecorder.paused ? 0 : now - activityRecorder.activeSince);
+  valTime.textContent = formatDuration(Math.floor(timerMs / 1000));
+}
+
+function startRecording(type) {
+  if (activityRecorder.active) return;
+  recordingType = type;
+  activityRecorder.start(
+    type === 'workout' ? workoutRunner.workoutName : 'Free Ride',
+    Date.now(),
+    type === 'workout' ? workoutRunner.intervals : null,
+    workoutRunner.ftp
+  );
+  valTime.textContent = '00:00';
+  recordingTimer = setInterval(updateRecordingTime, 1000);
+  updateRecordingControls();
+}
+
+function stopRecording(type) {
+  if (recordingType !== type) return;
+  clearInterval(recordingTimer);
+  recordingTimer = null;
+  const activity = activityRecorder.stop();
+  valTime.textContent = formatDuration(Math.floor(activityRecorder.timerMs / 1000));
+  recordingType = null;
+  updateRecordingControls();
+  if (!activity) {
+    addLog('Recording too short to save. Record at least one second.', 'warn');
+    if (type === 'free') rideRecordingStatus.textContent = 'Recording too short to save. Record at least one second.';
+    return;
+  }
+  const date = new Date(activity.startTime).toISOString().replace(/[:.]/g, '-');
+  recordedFitFile = new File([activity.bytes], `indoor-cycling-${date}.fit`, { type: 'application/octet-stream' });
+  fitExportPanel.hidden = false;
+  fitExportStatus.textContent = `${activity.name}: FIT file ready. Download, then upload to Garmin Connect.`;
+  btnShareFit.hidden = !(navigator.canShare && navigator.canShare({ files: [recordedFitFile] }));
+  downloadFit();
+  addLog('Activity saved as FIT. Upload it using Garmin Connect web Import Data.', 'info');
+  if (type === 'free') rideRecordingStatus.textContent = 'Ride saved. Use the activity export below to upload to Garmin Connect.';
+}
+
+btnRideStart.addEventListener('click', () => {
+  if (currentMode === 'workout' || workoutRunner.isRunning || activityRecorder.active) return;
+  startRecording('free');
+  requestWakeLock();
+  addLog('Free ride recording started.', 'info');
+});
+
+btnRideStop.addEventListener('click', () => stopRecording('free'));
 
 function downloadFit() {
   if (!recordedFitFile) return;
@@ -164,8 +231,6 @@ let targetSlope = 0.0;
 let currentMode = 'erg'; // 'erg', 'slope', or 'workout'
 let wakeLock = null;
 let logEntryCount = 0;
-let workoutStartTime = null;
-let timerInterval = null;
 let isSoundEnabled = true;
 let audioCtx = null;
 let deferredInstallPrompt = null;
@@ -227,7 +292,7 @@ wakeLockStatus.addEventListener('click', async () => {
 
 // Auto re-acquire wake lock when phone app regains visibility
 document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState === 'visible' && !wakeLock && (ftms.isConnected || workoutRunner.isRunning)) {
+  if (document.visibilityState === 'visible' && !wakeLock && (ftms.isConnected || activityRecorder.active)) {
     await requestWakeLock();
   }
 });
@@ -237,21 +302,6 @@ function formatDuration(totalSeconds) {
   const mins = Math.floor(totalSeconds / 60);
   const secs = totalSeconds % 60;
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-}
-
-// Timer
-function startTimer() {
-  workoutStartTime = Date.now();
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - workoutStartTime) / 1000);
-    valTime.textContent = formatDuration(elapsed);
-  }, 1000);
-}
-
-function stopTimer() {
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = null;
 }
 
 // FTMS Event Listeners
@@ -328,7 +378,6 @@ ftms.addEventListener('connected', async (e) => {
 
   // Request wake lock when connected
   requestWakeLock();
-  startTimer();
 
   // Initial target power sync
   try {
@@ -347,8 +396,9 @@ ftms.addEventListener('disconnected', () => {
   btnConnect.className = 'btn-connect';
   connectBtnText.textContent = 'Connect Elite Direto';
   deviceDetails.style.display = 'none';
-  stopTimer();
-  addLog('Trainer session ended.', 'warn');
+  addLog(activityRecorder.active
+    ? 'Trainer disconnected. Recording continues; reconnect for sensor readings.'
+    : 'Trainer disconnected.', 'warn');
 });
 
 ftms.addEventListener('deviceinfo', (e) => {
@@ -408,24 +458,9 @@ ftms.addEventListener('telemetry', (e) => {
     cadenceSub.textContent = d.cadence > 0 ? (d.cadence < 80 ? 'Low RPM' : d.cadence > 100 ? 'High RPM' : 'Optimal cadence') : 'Coasting';
   }
 
-  // Speed
-  if (d.speed !== undefined) {
-    valSpeed.textContent = d.speed.toFixed(1);
-  }
-
-  // Distance
-  if (d.totalDistance !== undefined) {
-    distanceSub.textContent = `${(d.totalDistance / 1000).toFixed(2)} km`;
-  }
-
   // Heart Rate
   if (!hrm.isConnected && heartRate !== undefined) {
     updateHeartRate(heartRate);
-  }
-
-  // Calories
-  if (d.totalEnergyKCal !== undefined) {
-    caloriesSub.textContent = `${d.totalEnergyKCal} kcal`;
   }
 });
 
@@ -609,6 +644,7 @@ tabErg.addEventListener('click', () => {
   ergSection.classList.remove('hidden');
   slopeSection.classList.remove('active');
   workoutSection.classList.remove('active');
+  updateRecordingControls();
   updateTargetWatts(targetWatts, true);
   addLog('Switched to ERG Mode (Target Watts control).', 'info');
 });
@@ -621,11 +657,13 @@ tabSlope.addEventListener('click', () => {
   ergSection.classList.add('hidden');
   slopeSection.classList.add('active');
   workoutSection.classList.remove('active');
+  updateRecordingControls();
   updateTargetSlope(targetSlope, true);
   addLog('Switched to Slope Sim Mode (Gradient % control).', 'info');
 });
 
 tabWorkout.addEventListener('click', () => {
+  if (recordingType === 'free') return;
   currentMode = 'workout';
   tabWorkout.classList.add('active');
   tabErg.classList.remove('active');
@@ -633,6 +671,7 @@ tabWorkout.addEventListener('click', () => {
   ergSection.classList.add('hidden');
   slopeSection.classList.remove('active');
   workoutSection.classList.add('active');
+  updateRecordingControls();
   syncWorkoutTargetToTrainer();
   addLog('Switched to Workout Mode (Structured ERG).', 'info');
 });
@@ -964,10 +1003,7 @@ workoutRunner.addEventListener('biaschanged', (e) => {
 });
 
 workoutRunner.addEventListener('started', () => {
-  if (!activityRecorder.active) {
-    activityRecorder.start(workoutRunner.workoutName, Date.now(), workoutRunner.intervals, workoutRunner.ftp);
-    recordingTimer = setInterval(() => activityRecorder.sample(), 1000);
-  }
+  startRecording('workout');
   initAudioContext();
   triggerHaptic([80, 50, 80]);
   requestWakeLock();
@@ -993,18 +1029,7 @@ workoutRunner.addEventListener('paused', (e) => {
 });
 
 workoutRunner.addEventListener('stopped', () => {
-  clearInterval(recordingTimer);
-  recordingTimer = null;
-  const activity = activityRecorder.stop();
-  if (activity) {
-    const date = new Date(activity.startTime).toISOString().replace(/[:.]/g, '-');
-    recordedFitFile = new File([activity.bytes], `indoor-cycling-${date}.fit`, { type: 'application/octet-stream' });
-    fitExportPanel.hidden = false;
-    fitExportStatus.textContent = `${activity.name}: FIT file ready. Download, then upload to Garmin Connect.`;
-    btnShareFit.hidden = !(navigator.canShare && navigator.canShare({ files: [recordedFitFile] }));
-    downloadFit();
-    addLog('Workout saved as FIT. Upload it using Garmin Connect web Import Data.', 'info');
-  }
+  stopRecording('workout');
   triggerHaptic(50);
   btnWorkoutToggle.textContent = '▶ Start Workout';
   btnWorkoutToggle.className = 'btn-workout-main btn-play';
@@ -1029,6 +1054,7 @@ workoutRunner.addEventListener('completed', () => {
 
 // Workout Play / Pause / Skip Buttons
 btnWorkoutToggle.addEventListener('click', () => {
+  if (recordingType === 'free') return;
   triggerHaptic(40);
   initAudioContext();
   if (!workoutRunner.isRunning) {

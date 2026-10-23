@@ -13,7 +13,7 @@ A standalone, high-contrast mobile web app and installable Progressive Web App (
 | **Manual ERG Mode** | Set fixed target wattage (50W - 500W) with quick presets and steps. |
 | **Slope Simulation** | Set simulated climbing grades (-5% downhill to +15% climb). |
 | **Offline Cache** | Full PWA Service Worker caching for zero-network operation. |
-| **FIT Activity Export** | Records structured workouts and downloads a Garmin-compatible indoor cycling activity when stopped or completed. |
+| **FIT Activity Export** | Records structured workouts and manual ERG/slope rides, downloading a Garmin-compatible indoor cycling activity when stopped or completed. |
 | **External Heart Rate Strap** | Pair a Bluetooth LE heart rate strap independently of your trainer for live BPM and FIT recording. |
 
 
@@ -53,7 +53,7 @@ A standalone, high-contrast mobile web app and installable Progressive Web App (
 3. Open the **Indoor Trainer** app on your phone.
 4. Tap **Connect Smart Trainer**.
 5. Select your trainer (e.g. `Elite Direto XR`, `KICKR`, `Tacx`) from the list and tap **Pair**.
-6. The app will confirm connection and display real-time telemetry (Watts, Cadence, Speed, Heart Rate).
+6. The app will confirm connection and display a 2x2 grid of power (with target power), cadence, recorded duration, and heart rate. Speed is still captured for FIT exports.
 
 ### External heart rate strap
 
@@ -66,9 +66,11 @@ A standalone, high-contrast mobile web app and installable Progressive Web App (
 
 ## FIT recording & Garmin import
 
-- Start a **structured workout** to begin recording. Stop it or let it finish to generate and automatically download a `.fit` activity. The export panel lets you download again or share the file where your browser supports file sharing.
+- In **ERG Mode** or **Slope Sim**, tap **Start** at the bottom of Trainer Control to begin logging a free ride; tap **Stop** to generate and automatically download a `.fit` activity. You can switch between ERG and slope while recording. Stop the free ride before switching to a structured workout.
+- Start a **structured workout** to begin recording automatically. Stop it or let it finish to generate the same FIT export. The activity export panel lets you download again, share the file where supported, or open Garmin Connect Import. Record at least one second to save an activity.
+- The elapsed-time tile measures the current recording, not time since trainer connection. It freezes when stopped and resets on the next recording. Trainer disconnection does not end a recording; reconnect to resume sensor readings, then use Stop to save.
 - Records actual trainer power, cadence, speed, and heart rate when available, with timestamps, estimated distance from speed, a lap, and session summaries. Structured workout exports also include the workout name, named timed steps, power targets, and each activity record's step index; grade and resistance targets are preserved in step notes. Missing/stale sensor values are not replaced with workout targets. Pauses are excluded from timer duration and distance; elapsed duration includes pauses. Disconnection clears sensor readings but does not stop the workout.
-- Recording works offline and stays in memory: keep the app open until you save the file. The latest export remains available until the next recorded workout is saved or the page is closed/reloaded. Manual ERG and slope sessions outside a structured workout are not recorded.
+- Recording works offline and stays in memory: keep the app open until you save the file. The latest export remains available until the next recorded activity is saved or the page is closed/reloaded.
 - Tap **Open Garmin Connect Import**, sign in, and upload the downloaded FIT file. On a phone, you may need the browser's **Desktop site** option. See [Garmin's manual activity upload instructions](https://support.garmin.com/en-US/?faq=Ht3ZP52Kju075uKvqTqu99).
 - Garmin Connect mobile file opening is intended for courses, not a reliable recorded-activity import. Choosing Garmin as the default file app does not enable automatic activity upload. The PWA cannot choose a default app, silently open another app, or upload to your Garmin account; use the web import page, then view the activity in Garmin Connect mobile.
 
