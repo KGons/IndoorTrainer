@@ -817,7 +817,6 @@ function syncWorkoutTargetToTrainer() {
 
     if (currentMode === 'workout') {
       targetWattsHeader.textContent = `Target: ${currentWatts} W`;
-      powerDeltaSub.textContent = `ERG Mode Active (${currentWatts}W)`;
     }
 
     if (ftms.isConnected && (workoutRunner.isRunning || currentMode === 'workout')) {
