@@ -259,11 +259,9 @@ header {
   overflow: hidden;
 }
 
-.metric-card.hero {
-  grid-column: span 2;
+.metric-card.power-card {
   background: linear-gradient(180deg, #1e293b 0%, #151e2e 100%);
   border-color: #38bdf8;
-  padding: 20px 18px;
 }
 
 .metric-title {
@@ -291,8 +289,7 @@ header {
   font-variant-numeric: tabular-nums;
 }
 
-.metric-val.hero-val {
-  font-size: 5rem;
+.power-card .metric-val {
   color: #38bdf8;
 }
 
@@ -307,6 +304,27 @@ header {
   font-size: 0.85rem;
   color: var(--text-muted);
   text-align: center;
+}
+
+.free-ride-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.free-ride-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.free-ride-controls[hidden] {
+  display: none;
 }
 
 /* Control Panel */
@@ -1022,17 +1040,12 @@ header {
   }
 
   .metrics-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
   }
 
-  .metric-card.hero {
-    grid-column: span 2;
+  .metric-card.power-card {
     padding: 12px 14px;
-  }
-
-  .metric-val.hero-val {
-    font-size: 3.8rem;
   }
 
   .metric-card {

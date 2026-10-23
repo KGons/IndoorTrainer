@@ -1,5 +1,5 @@
 // sw.js - Service Worker for 100% Offline Indoor Trainer App
-const CACHE_NAME = 'indoor-trainer-v4';
+const CACHE_NAME = 'indoor-trainer-v5';
 
 const ASSETS_TO_CACHE = [
   './',
