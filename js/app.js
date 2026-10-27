@@ -38,7 +38,6 @@ const valTime = document.getElementById('valTime');
 const valHeartRate = document.getElementById('valHeartRate');
 const targetWattsHeader = document.getElementById('targetWattsHeader');
 const powerDeltaSub = document.getElementById('powerDeltaSub');
-const cadenceSub = document.getElementById('cadenceSub');
 
 // Control Elements
 const tabErg = document.getElementById('tabErg');
@@ -455,7 +454,6 @@ ftms.addEventListener('telemetry', (e) => {
   // Cadence
   if (d.cadence !== undefined) {
     valCadence.textContent = Math.round(d.cadence);
-    cadenceSub.textContent = d.cadence > 0 ? (d.cadence < 80 ? 'Low RPM' : d.cadence > 100 ? 'High RPM' : 'Optimal cadence') : 'Coasting';
   }
 
   // Heart Rate
