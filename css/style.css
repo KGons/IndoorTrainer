@@ -252,7 +252,7 @@ header {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  padding: 16px 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -264,25 +264,15 @@ header {
   border-color: #38bdf8;
 }
 
-.metric-title {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--text-muted);
-  display: flex;
-  justify-content: space-between;
-}
-
 .metric-value-row {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  margin: 6px 0;
+  margin: 2px 0;
 }
 
 .metric-val {
-  font-size: 3.5rem;
+  font-size: 3.25rem;
   font-weight: 900;
   letter-spacing: -2px;
   line-height: 1;
@@ -1045,11 +1035,11 @@ button:disabled {
   }
 
   .metric-card.power-card {
-    padding: 12px 14px;
+    padding: 10px;
   }
 
   .metric-card {
-    padding: 10px 12px;
+    padding: 8px 10px;
   }
 
   .adjust-buttons-grid {
