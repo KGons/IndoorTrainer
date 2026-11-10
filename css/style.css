@@ -929,7 +929,7 @@ button:disabled {
   border-radius: 8px;
   padding: 8px 10px;
   display: grid;
-  grid-template-columns: auto 1.5fr 1fr 1.3fr 1fr auto;
+  grid-template-columns: auto minmax(70px, 1fr) minmax(92px, 0.9fr) minmax(100px, 1.3fr) minmax(70px, 0.9fr) auto;
   gap: 6px;
   align-items: center;
 }

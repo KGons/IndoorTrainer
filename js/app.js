@@ -1490,7 +1490,7 @@ function renderBuilderSegments() {
       group.className = 'builder-repeat-group';
       group.dataset.builderId = seg.id;
       group.draggable = true;
-      group.style.marginLeft = `${Math.min(depth, 4) * 12}px`;
+      group.style.marginLeft = `${Math.min(depth, 4) * 4}px`;
       group.style.border = '1px solid var(--accent-cyan)';
       group.style.borderRadius = '8px';
       group.style.padding = '8px';
@@ -1501,10 +1501,6 @@ function renderBuilderSegments() {
           <strong style="color:var(--accent-cyan);">Repeat</strong>
           <input type="number" class="builder-input repeat-count" min="1" max="100" value="${seg.count}" aria-label="Repeat count" style="width:72px;">
           <span style="color:var(--text-muted);">times</span>
-          <label style="display:flex; align-items:center; gap:4px; font-size:0.75rem; color:var(--text-muted);">
-            <input type="checkbox" class="repeat-skip-last" ${seg.skipLastStep ? 'checked' : ''}>
-            Skip last step on final repeat
-          </label>
           <button class="builder-btn-del repeat-delete" title="Remove repeat group" aria-label="Remove repeat group">✕</button>
         </div>
         <div class="builder-repeat-children"></div>
@@ -1512,6 +1508,10 @@ function renderBuilderSegments() {
           <button class="btn-builder-tool repeat-add-segment">➕ Add Interval</button>
           <button class="btn-builder-tool repeat-add-group">🔁 Add Nested Repeat</button>
         </div>
+        <label style="display:flex; align-items:center; justify-content:flex-end; gap:6px; margin-top:8px; font-size:0.75rem; color:var(--text-muted);">
+          <input type="checkbox" class="repeat-skip-last" ${seg.skipLastStep ? 'checked' : ''}>
+          Skip last step on final repeat
+        </label>
       `;
       group.querySelector('.repeat-count').addEventListener('input', (event) => {
         const count = parseInt(event.target.value, 10);
@@ -1557,7 +1557,10 @@ function renderBuilderSegments() {
     row.className = 'builder-segment-row';
     row.dataset.builderId = seg.id;
     row.draggable = true;
-    row.style.marginLeft = `${Math.min(depth, 4) * 12}px`;
+    row.style.marginLeft = `${Math.min(depth, 4) * 4}px`;
+
+    const repeatSegmentName = seg.name.toLowerCase() === 'rest' ? 'Rest' : 'Work';
+    if (depth > 0) seg.name = repeatSegmentName;
 
     let targetPlaceholder = '% FTP (e.g. 0.90)';
     if (seg.mode === 'erg_watts') targetPlaceholder = 'Watts (e.g. 150)';
@@ -1566,9 +1569,14 @@ function renderBuilderSegments() {
 
     row.innerHTML = `
       <button type="button" class="builder-drag-handle" aria-label="Drag ${escapeHTML(seg.name)}" title="Drag to reorder or move" draggable="true">⠿</button>
-      <input type="text" class="builder-input seg-name" value="${escapeHTML(seg.name)}" placeholder="Name">
+      ${depth > 0
+        ? `<select class="builder-select seg-name" aria-label="Interval description">
+            <option value="Work" ${repeatSegmentName === 'Work' ? 'selected' : ''}>Work</option>
+            <option value="Rest" ${repeatSegmentName === 'Rest' ? 'selected' : ''}>Rest</option>
+          </select>`
+        : `<input type="text" class="builder-input seg-name" value="${escapeHTML(seg.name)}" placeholder="Name">`}
       <div style="display: flex; align-items: center; gap: 4px;">
-        <input type="text" class="builder-input seg-dur" value="${formatBuilderDuration(seg.durationSec)}" placeholder="e.g. 5m or 1h20m45s" style="width: 100px; text-align: center;">
+        <input type="text" class="builder-input seg-dur" value="${formatBuilderDuration(seg.durationSec)}" placeholder="e.g. 5m or 1h20m45s" style="width: 100%; min-width: 0; text-align: center;">
       </div>
       <select class="builder-select seg-mode">
         <option value="erg_pct" ${seg.mode === 'erg_pct' ? 'selected' : ''}>ERG (% FTP)</option>
@@ -1581,8 +1589,9 @@ function renderBuilderSegments() {
     `;
 
     const nameInput = row.querySelector('.seg-name');
-    nameInput.addEventListener('input', (e) => {
+    nameInput.addEventListener(depth > 0 ? 'change' : 'input', (e) => {
       seg.name = e.target.value;
+      updateBuilderPreview();
     });
 
     const durInput = row.querySelector('.seg-dur');

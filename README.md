@@ -37,7 +37,7 @@ Rest,1,erg,120
 End
 ```
 
-In the builder, add intervals or nested repeat groups inside a repeat group's controls. Drag an interval or repeat using its handle to reorder it, or drop it in a repeat group's drop area to move it inside that loop. Enable **Skip last step on final repeat** on a group to omit its final step; duration and segment totals reflect the skipped step.
+In the builder, add intervals or nested repeat groups inside a repeat group's controls. Repeat-block interval descriptions can be set to **Work** or **Rest**. Drag an interval or repeat using its handle to reorder it, or drop it in a repeat group's drop area to move it inside that loop. Enable **Skip last step on final repeat** on a group to omit its final step; duration and segment totals reflect the skipped step.
 
 ---
 
