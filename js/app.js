@@ -217,6 +217,7 @@ const logArrow = document.getElementById('logArrow');
 
 // State
 let targetWatts = 150;
+const DEFAULT_TARGET_FTP_PERCENT = 0.5;
 let targetSlope = 0.0;
 let currentMode = 'erg'; // 'erg', 'slope', or 'workout'
 let wakeLock = null;
@@ -777,7 +778,9 @@ btnSendSlope.addEventListener('click', () => {
 // ==========================================
 
 // Initialize FTP
-inputFtp.value = workoutRunner.getFtp();
+const ftp = workoutRunner.getFtp();
+inputFtp.value = ftp;
+updateTargetWatts(Math.round(ftp * DEFAULT_TARGET_FTP_PERCENT), false);
 inputFtp.addEventListener('change', (e) => {
   const val = parseInt(e.target.value, 10);
   workoutRunner.setFtp(val);
