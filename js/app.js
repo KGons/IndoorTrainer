@@ -1490,13 +1490,15 @@ function renderBuilderSegments() {
       group.className = 'builder-repeat-group';
       group.dataset.builderId = seg.id;
       group.draggable = true;
-      group.style.marginLeft = `${Math.min(depth, 4) * 4}px`;
+      group.style.marginLeft = `${Math.min(depth, 4) * 2}px`;
       group.style.border = '1px solid var(--accent-cyan)';
       group.style.borderRadius = '8px';
       group.style.padding = '8px';
       group.style.marginBottom = '8px';
+      group.style.boxSizing = 'border-box';
+      group.style.minWidth = '0';
       group.innerHTML = `
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:8px;">
           <button type="button" class="builder-drag-handle" aria-label="Drag repeat group" title="Drag to reorder or move" draggable="true">⠿</button>
           <strong style="color:var(--accent-cyan);">Repeat</strong>
           <input type="number" class="builder-input repeat-count" min="1" max="100" value="${seg.count}" aria-label="Repeat count" style="width:72px;">
@@ -1504,7 +1506,7 @@ function renderBuilderSegments() {
           <button class="builder-btn-del repeat-delete" title="Remove repeat group" aria-label="Remove repeat group">✕</button>
         </div>
         <div class="builder-repeat-children"></div>
-        <div style="display:flex; gap:6px; margin-top:6px;">
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">
           <button class="btn-builder-tool repeat-add-segment">➕ Add Interval</button>
           <button class="btn-builder-tool repeat-add-group">🔁 Add Nested Repeat</button>
         </div>
@@ -1557,7 +1559,7 @@ function renderBuilderSegments() {
     row.className = 'builder-segment-row';
     row.dataset.builderId = seg.id;
     row.draggable = true;
-    row.style.marginLeft = `${Math.min(depth, 4) * 4}px`;
+    row.style.marginLeft = `${Math.min(depth, 4) * 2}px`;
 
     const repeatSegmentName = seg.name.toLowerCase() === 'rest' ? 'Rest' : 'Work';
     if (depth > 0) seg.name = repeatSegmentName;
@@ -1575,7 +1577,7 @@ function renderBuilderSegments() {
             <option value="Rest" ${repeatSegmentName === 'Rest' ? 'selected' : ''}>Rest</option>
           </select>`
         : `<input type="text" class="builder-input seg-name" value="${escapeHTML(seg.name)}" placeholder="Name">`}
-      <div style="display: flex; align-items: center; gap: 4px;">
+      <div class="seg-duration-wrap" style="display: flex; align-items: center; gap: 4px;">
         <input type="text" class="builder-input seg-dur" value="${formatBuilderDuration(seg.durationSec)}" placeholder="e.g. 5m or 1h20m45s" style="width: 100%; min-width: 0; text-align: center;">
       </div>
       <select class="builder-select seg-mode">

@@ -930,8 +930,49 @@ button:disabled {
   padding: 8px 10px;
   display: grid;
   grid-template-columns: auto minmax(70px, 1fr) minmax(92px, 0.9fr) minmax(100px, 1.3fr) minmax(70px, 0.9fr) auto;
+  grid-template-areas: "handle name duration mode target delete";
   gap: 6px;
   align-items: center;
+}
+
+.builder-segment-row > .builder-drag-handle {
+  grid-area: handle;
+}
+
+.builder-segment-row > .seg-name {
+  grid-area: name;
+  min-width: 0;
+}
+
+.builder-segment-row > .seg-duration-wrap {
+  grid-area: duration;
+  min-width: 0;
+}
+
+.builder-segment-row > .seg-mode {
+  grid-area: mode;
+  min-width: 0;
+}
+
+.builder-segment-row > .seg-target {
+  grid-area: target;
+  min-width: 0;
+}
+
+.builder-segment-row > .builder-btn-del {
+  grid-area: delete;
+}
+
+@media (max-width: 600px) {
+  .builder-segment-row {
+    grid-template-columns: 24px minmax(0, 1fr) minmax(90px, auto);
+    grid-template-areas:
+      "handle name delete"
+      "duration duration mode"
+      "target target target";
+    gap: 6px;
+    padding: 8px;
+  }
 }
 
 .builder-repeat-children {
