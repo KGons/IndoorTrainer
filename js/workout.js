@@ -235,10 +235,12 @@ export class WorkoutParser {
    * Steep Hill, 4, grade, 6.0%   (Grade mode at +6.0% incline)
    * Sprint Resistance, 1, resistance, 8 (Resistance mode at level 8)
    * 
-   * Also supports optional repeat blocks:
+   * Also supports nested repeat blocks:
    * Repeat, 5
    * Work, 3, erg, 0.90
+   * Repeat, 2, skip-last
    * Rest, 1, erg, 120
+   * End
    * End
    */
   static parseCSV(csvText) {
@@ -247,10 +249,8 @@ export class WorkoutParser {
     const rawLines = csvText.trim().split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
     if (rawLines.length === 0) return [];
 
-    const intervals = [];
-    let inRepeat = false;
-    let repeatCount = 1;
-    let repeatBuffer = [];
+    const root = { children: [] };
+    const repeatStack = [root];
 
     // Check if line 0 is a header row
     const line0 = rawLines[0].toLowerCase();
@@ -263,26 +263,20 @@ export class WorkoutParser {
 
       const firstCol = cols[0].toLowerCase();
 
-      // Check Repeat block
       if (firstCol === 'repeat') {
-        inRepeat = true;
-        repeatCount = parseInt(cols[1], 10) || 2;
-        repeatBuffer = [];
+        const parsedCount = parseInt(cols[1], 10);
+        repeatStack.push({
+          count: Number.isFinite(parsedCount) && parsedCount > 0 ? parsedCount : 2,
+          skipLastStep: ['skip-last', 'skip_last', 'skiplast', 'true', '1'].includes((cols[2] || '').toLowerCase()),
+          children: []
+        });
         continue;
       }
 
       if (firstCol === 'end' || firstCol === 'endrepeat' || firstCol === 'repeat end') {
-        if (inRepeat) {
-          for (let r = 1; r <= repeatCount; r++) {
-            for (let item of repeatBuffer) {
-              intervals.push({
-                ...item,
-                name: `${item.name} (${r}/${repeatCount})`
-              });
-            }
-          }
-          inRepeat = false;
-          repeatBuffer = [];
+        if (repeatStack.length > 1) {
+          const repeat = repeatStack.pop();
+          repeatStack[repeatStack.length - 1].children.push(repeat);
         }
         continue;
       }
@@ -290,22 +284,35 @@ export class WorkoutParser {
       // Parse standard interval row
       const parsed = WorkoutParser._parseCsvRow(cols);
       if (parsed) {
-        if (inRepeat) {
-          repeatBuffer.push(parsed);
-        } else {
-          intervals.push(parsed);
-        }
+        repeatStack[repeatStack.length - 1].children.push(parsed);
       }
     }
 
-    // Flush any open repeats
-    if (inRepeat && repeatBuffer.length > 0) {
-      for (let r = 1; r <= repeatCount; r++) {
-        for (let item of repeatBuffer) {
-          intervals.push({ ...item, name: `${item.name} (${r}/${repeatCount})` });
+    while (repeatStack.length > 1) {
+      const repeat = repeatStack.pop();
+      repeatStack[repeatStack.length - 1].children.push(repeat);
+    }
+
+    const intervals = [];
+    const expand = (items, suffix = '') => {
+      for (const item of items) {
+        if (Array.isArray(item.children)) {
+          for (let r = 1; r <= item.count; r++) {
+            const iterationStart = intervals.length;
+            expand(item.children, `${suffix} (${r}/${item.count})`);
+            if (item.skipLastStep && r === item.count && intervals.length > iterationStart) {
+              intervals.pop();
+            }
+          }
+        } else {
+          intervals.push({
+            ...item,
+            name: `${item.name}${suffix}`
+          });
         }
       }
-    }
+    };
+    expand(root.children);
 
     return intervals;
   }
