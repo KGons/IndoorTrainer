@@ -8,7 +8,7 @@ A standalone, high-contrast mobile web app and installable Progressive Web App (
 | Feature | Description |
 |---|---|
 | **Workout Library** | Includes editable and deletable preloaded workouts, plus saved custom workouts. |
-| **Workout Builder** | Create custom interval sessions with repeat sets, warmups, and cooldowns directly on your phone. |
+| **Workout Builder** | Create custom interval sessions with nested repeat sets, drag-and-drop reordering, warmups, and cooldowns directly on your phone. |
 | **Zwift-Style Bias** | Increase or decrease interval difficulty on the fly (-5%, -1%, 100%, +1%, +5%). |
 | **Manual ERG Mode** | Set fixed target wattage (50W - 500W) with quick presets and steps. |
 | **Slope Simulation** | Set simulated climbing grades (-5% downhill to +15% climb). |
@@ -16,6 +16,28 @@ A standalone, high-contrast mobile web app and installable Progressive Web App (
 | **FIT Activity Export** | Records structured workouts and manual ERG/slope rides, downloading a Garmin-compatible indoor cycling activity when stopped or completed. |
 | **External Heart Rate Strap** | Pair a Bluetooth LE heart rate strap independently of your trainer for live BPM and FIT recording. |
 
+Repeat blocks can be nested in workout CSV files. Each `Repeat,count` opens a block and each `End` closes the innermost block:
+
+```csv
+Repeat,3
+Repeat,5
+Set,3,erg,0.90
+Rest,1,erg,120
+End
+Rest,3m,erg,0.50
+End
+```
+
+Add `,skip-last` after the repeat count to omit the final step of that block on its last iteration (for example, to skip the final recovery):
+
+```csv
+Repeat,5,skip-last
+Set,3,erg,0.90
+Rest,1,erg,120
+End
+```
+
+In the builder, add intervals or nested repeat groups inside a repeat group's controls. Drag an interval or repeat using its handle to reorder it, or drop it in a repeat group's drop area to move it inside that loop. Enable **Skip last step on final repeat** on a group to omit its final step; duration and segment totals reflect the skipped step.
 
 ---
 

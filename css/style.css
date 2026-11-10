@@ -929,9 +929,61 @@ button:disabled {
   border-radius: 8px;
   padding: 8px 10px;
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1.3fr 1fr auto;
+  grid-template-columns: auto 1.5fr 1fr 1.3fr 1fr auto;
   gap: 6px;
   align-items: center;
+}
+
+.builder-repeat-children {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.builder-drag-handle {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: grab;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 4px 2px;
+  touch-action: none;
+}
+
+.builder-drag-handle:active {
+  cursor: grabbing;
+}
+
+.builder-dragging {
+  opacity: 0.4;
+}
+
+.builder-drop-before {
+  box-shadow: inset 0 3px var(--accent-cyan);
+}
+
+.builder-drop-after {
+  box-shadow: inset 0 -3px var(--accent-cyan);
+}
+
+.builder-repeat-dropzone {
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  min-height: 28px;
+  padding: 6px;
+  text-align: center;
+}
+
+.builder-repeat-dropzone.builder-drop-target {
+  border-color: var(--accent-cyan);
+  background: rgba(34, 211, 238, 0.12);
+  color: var(--accent-cyan);
 }
 
 .builder-segment-row.repeat-row {

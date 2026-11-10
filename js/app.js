@@ -1371,14 +1371,112 @@ if (defaultWorkout) {
 // ==========================================
 
 let builderSegments = [
-  { id: 'b-1', name: 'Warmup', durationSec: 300, mode: 'erg_pct', targetVal: '0.50' },
-  { id: 'b-2', name: 'Interval 1', durationSec: 180, mode: 'erg_pct', targetVal: '0.90' },
-  { id: 'b-3', name: 'Rest 1', durationSec: 60, mode: 'erg_watts', targetVal: '120' },
-  { id: 'b-4', name: 'Interval 2', durationSec: 180, mode: 'erg_pct', targetVal: '0.90' },
-  { id: 'b-5', name: 'Rest 2', durationSec: 60, mode: 'erg_watts', targetVal: '120' },
-  { id: 'b-6', name: 'Hill Climb', durationSec: 240, mode: 'grade', targetVal: '6.0' },
-  { id: 'b-7', name: 'Cooldown', durationSec: 300, mode: 'erg_watts', targetVal: '110' }
+  { id: 'b-1', type: 'segment', name: 'Warmup', durationSec: 300, mode: 'erg_pct', targetVal: '0.50' },
+  { id: 'b-2', type: 'segment', name: 'Interval 1', durationSec: 180, mode: 'erg_pct', targetVal: '0.90' },
+  { id: 'b-3', type: 'segment', name: 'Rest 1', durationSec: 60, mode: 'erg_watts', targetVal: '120' },
+  { id: 'b-4', type: 'segment', name: 'Interval 2', durationSec: 180, mode: 'erg_pct', targetVal: '0.90' },
+  { id: 'b-5', type: 'segment', name: 'Rest 2', durationSec: 60, mode: 'erg_watts', targetVal: '120' },
+  { id: 'b-6', type: 'segment', name: 'Hill Climb', durationSec: 240, mode: 'grade', targetVal: '6.0' },
+  { id: 'b-7', type: 'segment', name: 'Cooldown', durationSec: 300, mode: 'erg_watts', targetVal: '110' }
 ];
+
+function createBuilderSegment(name = 'Interval') {
+  return {
+    id: `b-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    type: 'segment',
+    name,
+    durationSec: 180,
+    mode: 'erg_pct',
+    targetVal: '0.90'
+  };
+}
+
+function getBuilderDuration(items) {
+  return items.reduce((total, item) => {
+    if (item.type === 'repeat') {
+      const duration = getBuilderDuration(item.children) * item.count;
+      const skippedDuration = item.skipLastStep ? getBuilderStepsTail(item.children, 1)[0]?.durationSec || 0 : 0;
+      return total + duration - skippedDuration;
+    }
+    return total + item.durationSec;
+  }, 0);
+}
+
+function getBuilderSegmentCount(items) {
+  return items.reduce((total, item) => {
+    if (item.type === 'repeat') {
+      const segmentCount = getBuilderSegmentCount(item.children) * item.count;
+      return total + segmentCount - (item.skipLastStep && segmentCount > 0 ? 1 : 0);
+    }
+    return total + 1;
+  }, 0);
+}
+
+function getBuilderStepsTail(items, limit) {
+  const tail = [];
+  for (let i = items.length - 1; i >= 0 && tail.length < limit; i--) {
+    const item = items[i];
+    if (item.type !== 'repeat') {
+      tail.push({ segment: item, durationSec: item.durationSec });
+      continue;
+    }
+
+    for (let iteration = item.count; iteration > 0 && tail.length < limit; iteration--) {
+      const skipFinalStep = item.skipLastStep && iteration === item.count;
+      const childTail = getBuilderStepsTail(item.children, limit - tail.length + (skipFinalStep ? 1 : 0));
+      if (skipFinalStep) childTail.shift();
+      tail.push(...childTail.slice(0, limit - tail.length));
+    }
+  }
+  return tail;
+}
+
+function removeBuilderItem(items, id) {
+  const index = items.findIndex(item => item.id === id);
+  if (index >= 0) {
+    items.splice(index, 1);
+    return true;
+  }
+  return items.some(item => item.type === 'repeat' && removeBuilderItem(item.children, id));
+}
+
+function findBuilderItem(items, id) {
+  for (let index = 0; index < items.length; index++) {
+    const item = items[index];
+    if (item.id === id) return { item, index, list: items };
+    if (item.type === 'repeat') {
+      const found = findBuilderItem(item.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function isBuilderListInsideItem(item, list) {
+  return item.type === 'repeat' && (
+    item.children === list ||
+    item.children.some(child => isBuilderListInsideItem(child, list))
+  );
+}
+
+function moveBuilderItem(sourceId, targetId, position, repeatId = null) {
+  const source = findBuilderItem(builderSegments, sourceId);
+  const target = targetId ? findBuilderItem(builderSegments, targetId) : null;
+  const repeat = repeatId ? findBuilderItem(builderSegments, repeatId)?.item : null;
+  if (!source || (targetId && !target) || (repeatId && (!repeat || repeat.type !== 'repeat'))) return false;
+  if (sourceId === targetId || (repeat && isBuilderListInsideItem(source.item, repeat.children))) return false;
+
+  const destination = repeat ? repeat.children : target?.list || builderSegments;
+  if (isBuilderListInsideItem(source.item, destination)) return false;
+
+  const referenceItem = target?.item;
+  source.list.splice(source.index, 1);
+  const targetIndex = referenceItem ? destination.indexOf(referenceItem) : destination.length;
+  if (targetIndex < 0) return false;
+  destination.splice(targetIndex + (position === 'after' ? 1 : 0), 0, source.item);
+  renderBuilderSegments();
+  return true;
+}
 
 function formatBuilderDuration(durationSec) {
   const hours = Math.floor(durationSec / 3600);
@@ -1393,11 +1491,82 @@ function formatBuilderDuration(durationSec) {
 
 function renderBuilderSegments() {
   builderSegmentsList.innerHTML = '';
-  builderSegmentCount.textContent = builderSegments.length;
+  builderSegmentCount.textContent = getBuilderSegmentCount(builderSegments);
 
-  builderSegments.forEach((seg, idx) => {
+  const renderItems = (items, container, depth = 0) => items.forEach((seg) => {
+    if (seg.type === 'repeat') {
+      const group = document.createElement('div');
+      group.className = 'builder-repeat-group';
+      group.dataset.builderId = seg.id;
+      group.draggable = true;
+      group.style.marginLeft = `${Math.min(depth, 4) * 12}px`;
+      group.style.border = '1px solid var(--accent-cyan)';
+      group.style.borderRadius = '8px';
+      group.style.padding = '8px';
+      group.style.marginBottom = '8px';
+      group.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+          <button type="button" class="builder-drag-handle" aria-label="Drag repeat group" title="Drag to reorder or move" draggable="true">⠿</button>
+          <strong style="color:var(--accent-cyan);">Repeat</strong>
+          <input type="number" class="builder-input repeat-count" min="1" max="100" value="${seg.count}" aria-label="Repeat count" style="width:72px;">
+          <span style="color:var(--text-muted);">times</span>
+          <label style="display:flex; align-items:center; gap:4px; font-size:0.75rem; color:var(--text-muted);">
+            <input type="checkbox" class="repeat-skip-last" ${seg.skipLastStep ? 'checked' : ''}>
+            Skip last step on final repeat
+          </label>
+          <button class="builder-btn-del repeat-delete" title="Remove repeat group" aria-label="Remove repeat group">✕</button>
+        </div>
+        <div class="builder-repeat-children"></div>
+        <div style="display:flex; gap:6px; margin-top:6px;">
+          <button class="btn-builder-tool repeat-add-segment">➕ Add Interval</button>
+          <button class="btn-builder-tool repeat-add-group">🔁 Add Nested Repeat</button>
+        </div>
+      `;
+      group.querySelector('.repeat-count').addEventListener('input', (event) => {
+        const count = parseInt(event.target.value, 10);
+        if (Number.isInteger(count) && count > 0 && count <= 100) {
+          seg.count = count;
+          updateBuilderPreview();
+        }
+      });
+      group.querySelector('.repeat-skip-last').addEventListener('change', (event) => {
+        seg.skipLastStep = event.target.checked;
+        updateBuilderPreview();
+      });
+      group.querySelector('.repeat-delete').addEventListener('click', () => {
+        removeBuilderItem(builderSegments, seg.id);
+        renderBuilderSegments();
+      });
+      group.querySelector('.repeat-add-segment').addEventListener('click', () => {
+        seg.children.push(createBuilderSegment());
+        renderBuilderSegments();
+      });
+      group.querySelector('.repeat-add-group').addEventListener('click', () => {
+        seg.children.push({
+          id: `b-repeat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          type: 'repeat',
+          count: 2,
+          skipLastStep: false,
+          children: []
+        });
+        renderBuilderSegments();
+      });
+      container.appendChild(group);
+      const childrenContainer = group.querySelector('.builder-repeat-children');
+      renderItems(seg.children, childrenContainer, depth + 1);
+      const dropzone = document.createElement('div');
+      dropzone.className = 'builder-repeat-dropzone';
+      dropzone.dataset.dropIntoRepeat = seg.id;
+      dropzone.textContent = 'Drop interval or repeat here';
+      childrenContainer.appendChild(dropzone);
+      return;
+    }
+
     const row = document.createElement('div');
     row.className = 'builder-segment-row';
+    row.dataset.builderId = seg.id;
+    row.draggable = true;
+    row.style.marginLeft = `${Math.min(depth, 4) * 12}px`;
 
     let targetPlaceholder = '% FTP (e.g. 0.90)';
     if (seg.mode === 'erg_watts') targetPlaceholder = 'Watts (e.g. 150)';
@@ -1405,6 +1574,7 @@ function renderBuilderSegments() {
     else if (seg.mode === 'resistance') targetPlaceholder = 'Level (e.g. 8)';
 
     row.innerHTML = `
+      <button type="button" class="builder-drag-handle" aria-label="Drag ${escapeHTML(seg.name)}" title="Drag to reorder or move" draggable="true">⠿</button>
       <input type="text" class="builder-input seg-name" value="${escapeHTML(seg.name)}" placeholder="Name">
       <div style="display: flex; align-items: center; gap: 4px;">
         <input type="text" class="builder-input seg-dur" value="${formatBuilderDuration(seg.durationSec)}" placeholder="e.g. 5m or 1h20m45s" style="width: 100px; text-align: center;">
@@ -1416,7 +1586,7 @@ function renderBuilderSegments() {
         <option value="resistance" ${seg.mode === 'resistance' ? 'selected' : ''}>Resistance</option>
       </select>
       <input type="text" class="builder-input seg-target" value="${escapeHTML(seg.targetVal)}" placeholder="${targetPlaceholder}">
-      <button class="builder-btn-del" data-remove="${idx}" title="Remove">✕</button>
+      <button class="builder-btn-del" title="Remove">✕</button>
     `;
 
     const nameInput = row.querySelector('.seg-name');
@@ -1459,35 +1629,113 @@ function renderBuilderSegments() {
 
     const delBtn = row.querySelector('.builder-btn-del');
     delBtn.addEventListener('click', () => {
-      builderSegments.splice(idx, 1);
+      removeBuilderItem(builderSegments, seg.id);
       renderBuilderSegments();
     });
 
-    builderSegmentsList.appendChild(row);
+    container.appendChild(row);
   });
+  renderItems(builderSegments, builderSegmentsList);
 
   updateBuilderPreview();
 }
 
+let draggedBuilderItemId = null;
+
+builderSegmentsList.addEventListener('dragstart', (event) => {
+  const itemElement = event.target.closest('[data-builder-id]');
+  const isInteractiveControl = event.target.closest('input, select, textarea, button');
+  if (!itemElement || (isInteractiveControl && !event.target.closest('.builder-drag-handle'))) {
+    event.preventDefault();
+    return;
+  }
+
+  draggedBuilderItemId = itemElement.dataset.builderId;
+  itemElement.classList.add('builder-dragging');
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', draggedBuilderItemId);
+});
+
+builderSegmentsList.addEventListener('dragend', () => {
+  draggedBuilderItemId = null;
+  builderSegmentsList.querySelectorAll('.builder-dragging, .builder-drop-target, .builder-drop-before, .builder-drop-after')
+    .forEach(element => element.classList.remove('builder-dragging', 'builder-drop-target', 'builder-drop-before', 'builder-drop-after'));
+});
+
+builderSegmentsList.addEventListener('dragover', (event) => {
+  if (!draggedBuilderItemId) return;
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+
+  const dropzone = event.target.closest('[data-drop-into-repeat]');
+  const itemElement = event.target.closest('[data-builder-id]');
+  builderSegmentsList.querySelectorAll('.builder-drop-target, .builder-drop-before, .builder-drop-after')
+    .forEach(element => element.classList.remove('builder-drop-target', 'builder-drop-before', 'builder-drop-after'));
+
+  if (dropzone) {
+    dropzone.classList.add('builder-drop-target');
+  } else if (itemElement && itemElement.dataset.builderId !== draggedBuilderItemId) {
+    const bounds = itemElement.getBoundingClientRect();
+    itemElement.classList.add(event.clientY < bounds.top + bounds.height / 2 ? 'builder-drop-before' : 'builder-drop-after');
+  }
+});
+
+builderSegmentsList.addEventListener('drop', (event) => {
+  if (!draggedBuilderItemId) return;
+  event.preventDefault();
+
+  const dropzone = event.target.closest('[data-drop-into-repeat]');
+  if (dropzone) {
+    moveBuilderItem(draggedBuilderItemId, null, 'after', dropzone.dataset.dropIntoRepeat);
+    return;
+  }
+
+  const itemElement = event.target.closest('[data-builder-id]');
+  if (itemElement) {
+    const bounds = itemElement.getBoundingClientRect();
+    const position = event.clientY < bounds.top + bounds.height / 2 ? 'before' : 'after';
+    moveBuilderItem(draggedBuilderItemId, itemElement.dataset.builderId, position);
+    return;
+  }
+
+  moveBuilderItem(draggedBuilderItemId, null, 'after');
+});
+
 function updateBuilderPreview() {
   builderTimelinePreview.innerHTML = '';
-  if (builderSegments.length === 0) {
+  const segmentCount = getBuilderSegmentCount(builderSegments);
+  builderSegmentCount.textContent = segmentCount;
+  if (segmentCount === 0) {
     builderTotalDuration.textContent = 'Total: 00:00';
     return;
   }
 
-  let totalSec = 0;
-  builderSegments.forEach(s => {
-    totalSec += s.durationSec;
-  });
+  const totalSec = getBuilderDuration(builderSegments);
 
   builderTotalDuration.textContent = `Total: ${formatDuration(totalSec)}`;
 
-  builderSegments.forEach((seg) => {
+  const previewSegments = [];
+  const collectPreviewSegments = (items, target, suffix = '') => items.forEach(item => {
+    if (item.type !== 'repeat') {
+      target.push({ segment: item, suffix });
+      return;
+    }
+
+    for (let iteration = 1; iteration <= item.count; iteration++) {
+      const repeatedSegments = [];
+      collectPreviewSegments(item.children, repeatedSegments, `${suffix} (${iteration}/${item.count})`);
+      if (item.skipLastStep && iteration === item.count && repeatedSegments.length > 0) {
+        repeatedSegments.pop();
+      }
+      target.push(...repeatedSegments);
+    }
+  });
+  collectPreviewSegments(builderSegments, previewSegments);
+
+  previewSegments.forEach(({ segment: seg, suffix }) => {
     const bar = document.createElement('div');
     bar.className = 'timeline-bar';
-    const durSec = seg.durationSec;
-    const widthPct = Math.max(2, (durSec / totalSec) * 100);
+    const widthPct = Math.max(1.5, (seg.durationSec / totalSec) * 100);
     bar.style.width = `${widthPct}%`;
 
     if (seg.mode === 'grade') {
@@ -1515,14 +1763,21 @@ function updateBuilderPreview() {
       else bar.classList.add('zone-z6');
     }
 
-    bar.title = `${seg.name} (${formatBuilderDuration(seg.durationSec)})`;
+    bar.title = `${seg.name}${suffix} (${formatBuilderDuration(seg.durationSec)})`;
     builderTimelinePreview.appendChild(bar);
   });
 }
 
 function generateBuilderCSV() {
   const lines = ['Segment,Duration,Mode,Target'];
-  builderSegments.forEach((s) => {
+  const writeItems = (items) => items.forEach((s) => {
+    if (s.type === 'repeat') {
+      lines.push(`Repeat,${s.count}${s.skipLastStep ? ',skip-last' : ''}`);
+      writeItems(s.children);
+      lines.push('End');
+      return;
+    }
+
     let modeStr = 'erg';
     let targetStr = s.targetVal || '0.50';
 
@@ -1542,18 +1797,13 @@ function generateBuilderCSV() {
 
     lines.push(`${s.name.replace(/,/g, ' ')},${formatBuilderDuration(s.durationSec)},${modeStr},${targetStr}`);
   });
+  writeItems(builderSegments);
   return lines.join('\n');
 }
 
 // Add Single Interval
 btnAddSegmentBtn.addEventListener('click', () => {
-  builderSegments.push({
-    id: 'b-' + Date.now(),
-    name: `Interval ${builderSegments.length + 1}`,
-    durationSec: 180,
-    mode: 'erg_pct',
-    targetVal: '0.90'
-  });
+  builderSegments.push(createBuilderSegment(`Interval ${getBuilderSegmentCount(builderSegments) + 1}`));
   renderBuilderSegments();
 });
 
@@ -1561,6 +1811,7 @@ btnAddSegmentBtn.addEventListener('click', () => {
 btnAddWarmupPreset.addEventListener('click', () => {
   builderSegments.unshift({
     id: 'b-' + Date.now(),
+    type: 'segment',
     name: 'Warmup Spin',
     durationSec: 300,
     mode: 'erg_pct',
@@ -1573,6 +1824,7 @@ btnAddWarmupPreset.addEventListener('click', () => {
 btnAddCooldownPreset.addEventListener('click', () => {
   builderSegments.push({
     id: 'b-' + Date.now(),
+    type: 'segment',
     name: 'Cooldown',
     durationSec: 300,
     mode: 'erg_watts',
@@ -1591,7 +1843,7 @@ btnCloseRepeatBox.addEventListener('click', () => {
 });
 
 btnConfirmAddRepeat.addEventListener('click', () => {
-  const count = parseInt(repeatCountInput.value, 10) || 3;
+  const count = Math.min(100, Math.max(1, parseInt(repeatCountInput.value, 10) || 3));
   const workDur = WorkoutParser._parseDuration(repeatWorkDurInput.value) || 180;
   const workTarget = repeatWorkTargetInput.value.trim() || '0.90';
   const restDur = WorkoutParser._parseDuration(repeatRestDurInput.value) || 60;
@@ -1600,22 +1852,31 @@ btnConfirmAddRepeat.addEventListener('click', () => {
   const isWorkWatts = parseFloat(workTarget) > 2.5;
   const isRestWatts = parseFloat(restTarget) > 2.5;
 
-  for (let r = 1; r <= count; r++) {
-    builderSegments.push({
-      id: `b-work-${Date.now()}-${r}`,
-      name: `Set (${r}/${count})`,
-      durationSec: workDur,
-      mode: isWorkWatts ? 'erg_watts' : 'erg_pct',
-      targetVal: workTarget
-    });
-    builderSegments.push({
-      id: `b-rest-${Date.now()}-${r}`,
-      name: `Rest (${r}/${count})`,
-      durationSec: restDur,
-      mode: isRestWatts ? 'erg_watts' : 'erg_pct',
-      targetVal: restTarget
-    });
-  }
+  const id = `b-repeat-${Date.now()}`;
+  builderSegments.push({
+    id,
+    type: 'repeat',
+    count,
+    skipLastStep: false,
+    children: [
+      {
+        id: `b-work-${Date.now()}`,
+        type: 'segment',
+        name: 'Set',
+        durationSec: workDur,
+        mode: isWorkWatts ? 'erg_watts' : 'erg_pct',
+        targetVal: workTarget
+      },
+      {
+        id: `b-rest-${Date.now()}`,
+        type: 'segment',
+        name: 'Rest',
+        durationSec: restDur,
+        mode: isRestWatts ? 'erg_watts' : 'erg_pct',
+        targetVal: restTarget
+      }
+    ]
+  });
 
   builderRepeatBox.classList.remove('active');
   renderBuilderSegments();
@@ -1623,7 +1884,7 @@ btnConfirmAddRepeat.addEventListener('click', () => {
 
 // Download CSV file directly
 btnDownloadCsv.addEventListener('click', () => {
-  if (builderSegments.length === 0) {
+  if (getBuilderSegmentCount(builderSegments) === 0) {
     alert('Please add at least one segment before downloading.');
     return;
   }
@@ -1645,7 +1906,7 @@ btnDownloadCsv.addEventListener('click', () => {
 
 // Save to Library & Ride
 btnSaveBuilderToLibrary.addEventListener('click', () => {
-  if (builderSegments.length === 0) {
+  if (getBuilderSegmentCount(builderSegments) === 0) {
     alert('Please add at least one segment before saving.');
     return;
   }
@@ -1653,13 +1914,12 @@ btnSaveBuilderToLibrary.addEventListener('click', () => {
   const name = builderWorkoutName.value.trim() || 'Custom Builder Workout';
   const category = builderCategory.value || 'Custom';
 
-  let totalSec = 0;
-  builderSegments.forEach(s => totalSec += s.durationSec);
+  const totalSec = getBuilderDuration(builderSegments);
 
   const saved = WorkoutLibrary.saveCustomWorkout(
     name,
     category,
-    `Custom built workout (${formatDuration(totalSec)}, ${builderSegments.length} segments)`,
+    `Custom built workout (${formatDuration(totalSec)}, ${getBuilderSegmentCount(builderSegments)} segments)`,
     csvText
   );
 
