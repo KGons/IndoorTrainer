@@ -204,15 +204,6 @@ const builderTimelinePreview = document.getElementById('builderTimelinePreview')
 const builderSegmentCount = document.getElementById('builderSegmentCount');
 const builderSegmentsList = document.getElementById('builderSegmentsList');
 const btnAddSegmentBtn = document.getElementById('btnAddSegmentBtn');
-const btnOpenRepeatBox = document.getElementById('btnOpenRepeatBox');
-const builderRepeatBox = document.getElementById('builderRepeatBox');
-const btnCloseRepeatBox = document.getElementById('btnCloseRepeatBox');
-const btnConfirmAddRepeat = document.getElementById('btnConfirmAddRepeat');
-const repeatCountInput = document.getElementById('repeatCountInput');
-const repeatWorkDurInput = document.getElementById('repeatWorkDurInput');
-const repeatWorkTargetInput = document.getElementById('repeatWorkTargetInput');
-const repeatRestDurInput = document.getElementById('repeatRestDurInput');
-const repeatRestTargetInput = document.getElementById('repeatRestTargetInput');
 const btnAddWarmupPreset = document.getElementById('btnAddWarmupPreset');
 const btnAddCooldownPreset = document.getElementById('btnAddCooldownPreset');
 const btnDownloadCsv = document.getElementById('btnDownloadCsv');
@@ -1833,52 +1824,15 @@ btnAddCooldownPreset.addEventListener('click', () => {
   renderBuilderSegments();
 });
 
-// Repeat Block Handler
+// Add an empty repeat block so intervals can be arranged inside it.
 btnOpenRepeatBox.addEventListener('click', () => {
-  builderRepeatBox.classList.toggle('active');
-});
-
-btnCloseRepeatBox.addEventListener('click', () => {
-  builderRepeatBox.classList.remove('active');
-});
-
-btnConfirmAddRepeat.addEventListener('click', () => {
-  const count = Math.min(100, Math.max(1, parseInt(repeatCountInput.value, 10) || 3));
-  const workDur = WorkoutParser._parseDuration(repeatWorkDurInput.value) || 180;
-  const workTarget = repeatWorkTargetInput.value.trim() || '0.90';
-  const restDur = WorkoutParser._parseDuration(repeatRestDurInput.value) || 60;
-  const restTarget = repeatRestTargetInput.value.trim() || '120';
-
-  const isWorkWatts = parseFloat(workTarget) > 2.5;
-  const isRestWatts = parseFloat(restTarget) > 2.5;
-
-  const id = `b-repeat-${Date.now()}`;
   builderSegments.push({
-    id,
+    id: `b-repeat-${Date.now()}`,
     type: 'repeat',
-    count,
+    count: 2,
     skipLastStep: false,
-    children: [
-      {
-        id: `b-work-${Date.now()}`,
-        type: 'segment',
-        name: 'Set',
-        durationSec: workDur,
-        mode: isWorkWatts ? 'erg_watts' : 'erg_pct',
-        targetVal: workTarget
-      },
-      {
-        id: `b-rest-${Date.now()}`,
-        type: 'segment',
-        name: 'Rest',
-        durationSec: restDur,
-        mode: isRestWatts ? 'erg_watts' : 'erg_pct',
-        targetVal: restTarget
-      }
-    ]
+    children: []
   });
-
-  builderRepeatBox.classList.remove('active');
   renderBuilderSegments();
 });
 

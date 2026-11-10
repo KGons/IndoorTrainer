@@ -453,45 +453,10 @@ Cooldown,5,erg,130</textarea>
           <!-- Dynamic Segment Rows -->
         </div>
 
-        <!-- Inline Repeat Form (toggleable) -->
-        <div id="builderRepeatBox" class="repeat-creator-box">
-          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 800; color: var(--accent-cyan);">
-            <span>🔁 Add Interval Repeat Set</span>
-            <button id="btnCloseRepeatBox" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;">✕</button>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; font-size: 0.75rem;">
-            <div>
-              <span>Repeat Count:</span>
-              <input type="number" id="repeatCountInput" class="builder-input" value="5" min="1" max="100">
-            </div>
-            <div>
-              <span>Work Duration:</span>
-              <input type="text" id="repeatWorkDurInput" class="builder-input" value="3" placeholder="e.g. 3m or 1h20m45s">
-            </div>
-            <div>
-              <span>Work Target (% FTP or W):</span>
-              <input type="text" id="repeatWorkTargetInput" class="builder-input" value="0.90">
-            </div>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.75rem;">
-            <div>
-              <span>Rest Duration:</span>
-              <input type="text" id="repeatRestDurInput" class="builder-input" value="1" placeholder="e.g. 1m or 45s">
-            </div>
-            <div>
-              <span>Rest Target (% FTP or W):</span>
-              <input type="text" id="repeatRestTargetInput" class="builder-input" value="120">
-            </div>
-          </div>
-          <button id="btnConfirmAddRepeat" class="btn-step" style="background: var(--accent-cyan); color: #000; font-weight: 800; padding: 10px;">
-            Insert Repeat Set
-          </button>
-        </div>
-
         <!-- Quick Add Toolbar -->
         <div class="builder-tools-row">
           <button id="btnAddSegmentBtn" class="btn-builder-tool">➕ Add Interval</button>
-          <button id="btnOpenRepeatBox" class="btn-builder-tool" style="border-color: var(--accent-cyan); color: var(--accent-cyan);">🔁 Add Repeat Set</button>
+          <button id="btnOpenRepeatBox" class="btn-builder-tool" style="border-color: var(--accent-cyan); color: var(--accent-cyan);">🔁 Add Repeat Block</button>
           <button id="btnAddWarmupPreset" class="btn-builder-tool">🔥 +5m Warmup</button>
           <button id="btnAddCooldownPreset" class="btn-builder-tool">❄️ +5m Cooldown</button>
         </div>
